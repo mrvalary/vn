@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,21 +31,65 @@ namespace CursovoyProjectxDxD
 
             RegisterCommands(registry);
 
-            string commandKey = BuildCommandKey(args);
+            Console.WriteLine("Интерактивная консоль vn запущена.");
+            Console.WriteLine("Введите команду. Для справки: vn --help");
+            Console.WriteLine("Для выхода: exit");
+            Console.WriteLine();
 
-            ICommand command;
-            if (!registry.TryGet(commandKey, out command))
+            while (true)
             {
-                Console.WriteLine("Неизвестная команда.");
-                Console.WriteLine("Используйте 'vn --help' для просмотра списка команд.");
-                return 1;
+                Console.Write("vn> ");
+                string input = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(input))
+                    continue;
+
+                input = input.Trim();
+
+                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase) ||
+                    input.Equals("quit", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Выход из программы.");
+                    break;
+                }
+
+                if (input.StartsWith("vn ", StringComparison.OrdinalIgnoreCase))
+                {
+                    input = input.Substring(3).Trim();
+                }
+                else if (input.Equals("vn", StringComparison.OrdinalIgnoreCase))
+                {
+                    input = "--help";
+                }
+
+                string[] commandArgs = SplitCommandLine(input);
+                string commandKey = BuildCommandKey(commandArgs);
+
+                ICommand command;
+                if (!registry.TryGet(commandKey, out command))
+                {
+                    Console.WriteLine("Неизвестная команда.");
+                    Console.WriteLine("Введите 'vn --help' для просмотра списка команд.");
+                    Console.WriteLine();
+                    continue;
+                }
+
+                try
+                {
+                    CommandContext context = new CommandContext(commandArgs, serviceProvider);
+                    CommandResult result = await command.ExecuteAsync(context);
+
+                    Console.WriteLine(result.Message);
+                    Console.WriteLine();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Ошибка выполнения команды: " + ex.Message);
+                    Console.WriteLine();
+                }
             }
 
-            CommandContext context = new CommandContext(args, serviceProvider);
-            CommandResult result = await command.ExecuteAsync(context);
-
-            Console.WriteLine(result.Message);
-            return result.Success ? 0 : 1;
+            return 0;
         }
 
         private static ServiceProvider ConfigureServices()
@@ -103,6 +148,45 @@ namespace CursovoyProjectxDxD
             }
 
             return string.Join(" ", args).Trim();
+        }
+
+        private static string[] SplitCommandLine(string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine))
+                return new string[0];
+
+            var result = new System.Collections.Generic.List<string>();
+            bool inQuotes = false;
+            var current = new System.Text.StringBuilder();
+
+            foreach (char ch in commandLine)
+            {
+                if (ch == '"')
+                {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (char.IsWhiteSpace(ch) && !inQuotes)
+                {
+                    if (current.Length > 0)
+                    {
+                        result.Add(current.ToString());
+                        current.Clear();
+                    }
+                }
+                else
+                {
+                    current.Append(ch);
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                result.Add(current.ToString());
+            }
+
+            return result.ToArray();
         }
     }
 }

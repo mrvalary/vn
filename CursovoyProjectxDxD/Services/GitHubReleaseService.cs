@@ -16,7 +16,7 @@ namespace CursovoyProjectxDxD.Services
         private readonly HttpClient _httpClient;
 
         // Замени на свой репозиторий
-        private const string Owner = "YOUR_GITHUB_LOGIN";
+        private const string Owner = "mrvalary";
         private const string Repo = "vn";
 
         public GitHubReleaseService(HttpClient httpClient)
