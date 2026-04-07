@@ -74,7 +74,8 @@ namespace CursovoyProjectxDxD.Services
 
         private static string GetCurrentVersion()
         {
-            return typeof(GitHubReleaseService).Assembly.GetName().Version?.ToString() ?? "1.0.0";
+            Version version = typeof(GitHubReleaseService).Assembly.GetName().Version;
+            return version != null ? version.ToString(3) : "1.0.0";
         }
 
         private static string NormalizeVersion(string tag)
