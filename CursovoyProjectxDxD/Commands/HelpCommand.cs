@@ -17,7 +17,7 @@ namespace CursovoyProjectxDxD.Commands
             _registry = registry;
         }
 
-        public string Name => "--help";
+        public string Name => "help";
         public string Description => "Вывод карты всех команд";
 
         public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default)

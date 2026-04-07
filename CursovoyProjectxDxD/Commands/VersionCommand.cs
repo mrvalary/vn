@@ -11,7 +11,7 @@ namespace CursovoyProjectxDxD.Commands
 {
     public sealed class VersionCommand : ICommand
     {
-        public string Name => "--version";
+        public string Name => "version";
         public string Description => "Показ версии клиента";
 
         public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default)

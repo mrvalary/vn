@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CursovoyProjectxDxD.Core
 {
-    public sealed class CommandContext
+    public sealed class CommandContext //Это объект, который передаётся в каждую команду
     {
         public string[] Args { get; }
         public IServiceProvider Services { get; }

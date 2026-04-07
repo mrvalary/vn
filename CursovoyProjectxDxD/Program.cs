@@ -32,7 +32,7 @@ namespace CursovoyProjectxDxD
             RegisterCommands(registry);
 
             Console.WriteLine("Интерактивная консоль vn запущена.");
-            Console.WriteLine("Введите команду. Для справки: vn --help");
+            Console.WriteLine("Введите команду. Для справки: help");
             Console.WriteLine("Для выхода: exit");
             Console.WriteLine();
 
@@ -53,15 +53,6 @@ namespace CursovoyProjectxDxD
                     break;
                 }
 
-                if (input.StartsWith("vn ", StringComparison.OrdinalIgnoreCase))
-                {
-                    input = input.Substring(3).Trim();
-                }
-                else if (input.Equals("vn", StringComparison.OrdinalIgnoreCase))
-                {
-                    input = "--help";
-                }
-
                 string[] commandArgs = SplitCommandLine(input);
                 string commandKey = BuildCommandKey(commandArgs);
 
@@ -69,7 +60,7 @@ namespace CursovoyProjectxDxD
                 if (!registry.TryGet(commandKey, out command))
                 {
                     Console.WriteLine("Неизвестная команда.");
-                    Console.WriteLine("Введите 'vn --help' для просмотра списка команд.");
+                    Console.WriteLine("Введите 'help' для просмотра списка команд.");
                     Console.WriteLine();
                     continue;
                 }
@@ -121,15 +112,15 @@ namespace CursovoyProjectxDxD
         private static string BuildCommandKey(string[] args)
         {
             if (args == null || args.Length == 0)
-                return "--help";
+                return "help";
 
             if (args.Length == 1)
             {
-                if (args[0].Equals("--help", StringComparison.OrdinalIgnoreCase))
-                    return "--help";
+                if (args[0].Equals("help", StringComparison.OrdinalIgnoreCase))
+                    return "help";
 
-                if (args[0].Equals("--version", StringComparison.OrdinalIgnoreCase))
-                    return "--version";
+                if (args[0].Equals("version", StringComparison.OrdinalIgnoreCase))
+                    return "version";
             }
 
             if (args.Length >= 2)

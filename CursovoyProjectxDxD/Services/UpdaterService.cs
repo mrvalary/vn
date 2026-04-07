@@ -83,10 +83,13 @@ namespace CursovoyProjectxDxD.Services
                 return false;
             }
 
+            int currentProcessId = Process.GetCurrentProcess().Id;
+
             string arguments =
                 "\"" + appDirectory + "\" " +
                 "\"" + extractPath + "\" " +
-                "\"" + currentExePath + "\"";
+                "\"" + currentExePath + "\" " +
+                currentProcessId.ToString();
 
             Console.WriteLine("Запуск updater...");
             Process.Start(new ProcessStartInfo
