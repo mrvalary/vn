@@ -1,0 +1,13 @@
+.vs/
+bin/
+obj/
+packages/
+.nuget/
+*.user
+*.suo
+*.cache
+TestResults/
+update/
+temp/
+*.zip
+*.log
