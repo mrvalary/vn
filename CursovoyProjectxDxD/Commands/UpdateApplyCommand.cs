@@ -24,10 +24,10 @@ namespace CursovoyProjectxDxD.Commands
 
             if (result)
             {
-                return CommandResult.Ok("Команда обновления выполнена успешно.");
+                return CommandResult.Ok("Обновление запущено.");
             }
 
-            return CommandResult.Fail("Обновление не было применено.");
+            return CommandResult.Fail("Не удалось запустить обновление.");
         }
     }
 }
