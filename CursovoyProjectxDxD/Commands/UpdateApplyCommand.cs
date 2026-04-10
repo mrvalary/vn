@@ -1,6 +1,10 @@
-﻿using System.Threading;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using CursovoyProjectxDxD.Core;
+using CursovoyProjectxDxD.Models;
 using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
@@ -14,20 +18,35 @@ namespace CursovoyProjectxDxD.Commands
 
         public string Description
         {
-            get { return "Установка обновления клиента"; }
+            get { return "Запуск внешнего установщика обновления"; }
         }
 
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
-            UpdaterService service = context.GetRequiredService<UpdaterService>();
-            bool result = await service.ApplyUpdateAsync(cancellationToken);
+            GitHubReleaseService releaseService = context.GetRequiredService<GitHubReleaseService>();
+            InstallerLauncherService launcherService = context.GetRequiredService<InstallerLauncherService>();
+            AppUpdateInfo info = await releaseService.CheckForUpdateAsync(cancellationToken);
 
-            if (result)
+            if (!info.IsAvailable)
             {
-                return CommandResult.Ok("Обновление запущено.");
+                return CommandResult.Ok("Обновление не требуется.");
             }
 
-            return CommandResult.Fail("Не удалось запустить обновление.");
+            string appExePath = Process.GetCurrentProcess().MainModule.FileName;
+            string appDirectory = Path.GetDirectoryName(appExePath);
+            int currentProcessId = Process.GetCurrentProcess().Id;
+
+            bool started = launcherService.Launch(appDirectory, appExePath, currentProcessId);
+            if (!started)
+            {
+                return CommandResult.Fail("Не удалось запустить vn-installer.exe.");
+            }
+
+            Console.WriteLine("Установщик обновления запущен.");
+            Console.WriteLine("Основное приложение будет закрыто.");
+
+            Environment.Exit(0);
+            return CommandResult.Ok("Установщик запущен.");
         }
     }
 }

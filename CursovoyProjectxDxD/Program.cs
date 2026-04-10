@@ -96,7 +96,7 @@ namespace CursovoyProjectxDxD
             });
 
             services.AddSingleton<GitHubReleaseService>();
-            services.AddSingleton<UpdaterService>();
+            services.AddSingleton<InstallerLauncherService>();
 
             return services.BuildServiceProvider();
         }
