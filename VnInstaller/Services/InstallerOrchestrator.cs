@@ -5,16 +5,25 @@ using VnInstaller.Models;
 
 namespace VnInstaller.Services
 {
+    // Координатор полного сценария установки или обновления.
     public sealed class InstallerOrchestrator
     {
+        // Сервис чтения информации о релизе.
         private readonly GitHubReleaseService _gitHubReleaseService;
+        // Сервис скачивания архива.
         private readonly ReleaseDownloadService _releaseDownloadService;
+        // Сервис распаковки архива.
         private readonly ArchiveExtractorService _archiveExtractorService;
+        // Сервис ожидания завершения основного процесса.
         private readonly ProcessWaitService _processWaitService;
+        // Сервис копирования файлов.
         private readonly FileDeploymentService _fileDeploymentService;
+        // Сервис запуска приложения после установки.
         private readonly AppStarterService _appStarterService;
+        // Логгер сценария установки.
         private readonly FileLogger _logger;
 
+        // Все зависимости получаем через конструктор.
         public InstallerOrchestrator(
             GitHubReleaseService gitHubReleaseService,
             ReleaseDownloadService releaseDownloadService,
@@ -33,19 +42,28 @@ namespace VnInstaller.Services
             _logger = logger;
         }
 
-        public async Task ExecuteAsync(InstallerArguments installerArguments, CancellationToken cancellationToken = default(CancellationToken))
+        // Выполняет полный сценарий установки или обновления.
+        public async Task<AppUpdateInfo> ExecuteAsync(InstallerArguments installerArguments, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Установщик сам получает релиз и не зависит от состояния vn-app.
+            // Получаем сведения о последнем релизе.
             AppUpdateInfo updateInfo = await _gitHubReleaseService.GetLatestReleaseAsync(cancellationToken);
+            // Пишем версию релиза в лог.
             _logger.Info("Latest release version: " + updateInfo.LatestVersion);
 
+            // Скачиваем zip-архив релиза.
             string archivePath = await _releaseDownloadService.DownloadAsync(updateInfo, cancellationToken);
+            // Распаковываем архив во временную папку.
             string extractedDirectory = _archiveExtractorService.Extract(archivePath, updateInfo.LatestVersion);
 
-            // Сначала освобождаем файлы приложения, затем заменяем их и запускаем vn-app заново.
+            // При обновлении ждём завершения основного приложения.
             _processWaitService.WaitForExit(installerArguments.AppProcessId);
+            // Копируем распакованные файлы в целевой каталог.
             _fileDeploymentService.Deploy(extractedDirectory, installerArguments.TargetDirectory);
+            // Запускаем основное приложение после завершения копирования.
             _appStarterService.Start(installerArguments.AppExePath);
+
+            // Возвращаем информацию об установленной версии.
+            return updateInfo;
         }
     }
 }
