@@ -78,7 +78,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\InstallerArguments.cs" />
     <Compile Include="Models\AppUpdateInfo.cs" />
     <Compile Include="Models\GitHubAssetDto.cs" />
     <Compile Include="Models\GitHubReleaseDto.cs" />

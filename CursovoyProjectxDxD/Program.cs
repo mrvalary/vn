@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using CursovoyProjectxDxD.Commands;
 using CursovoyProjectxDxD.Core;
+using CursovoyProjectxDxD.Models;
 using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD
@@ -16,12 +17,10 @@ namespace CursovoyProjectxDxD
         {
             try
             {
-                // Вся логика запуска вынесена в асинхронный метод.
                 return MainAsync(args).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
-                // Необработанная ошибка верхнего уровня пишется в консоль.
                 Console.WriteLine("Критическая ошибка: " + ex.Message);
                 return 1;
             }
@@ -30,38 +29,43 @@ namespace CursovoyProjectxDxD
         // Основной сценарий запуска CLI.
         private static async Task<int> MainAsync(string[] args)
         {
+            // Название окна помогает отличать основное приложение от установщика.
+            Console.Title = "vn-app";
+
             // Создаём контейнер зависимостей приложения.
             ServiceProvider serviceProvider = ConfigureServices();
-            // Достаём из контейнера реестр команд.
+            // Получаем реестр команд из контейнера.
             CommandRegistry registry = serviceProvider.GetRequiredService<CommandRegistry>();
-
-            // Регистрируем все доступные команды.
+            // Наполняем реестр командами.
             RegisterCommands(registry);
 
-            // Печатаем приветствие.
+            // Печатаем стартовое сообщение.
             Console.WriteLine("Интерактивная консоль vn запущена.");
-            // Подсказываем базовую команду справки.
+            // Сразу показываем локальную версию приложения.
+            Console.WriteLine("Текущая версия приложения: " + AppVersionProvider.GetCurrentVersion());
+            // При старте дополнительно выполняем быструю проверку обновления.
+            await PrintStartupUpdateInfoAsync(serviceProvider);
+            // Показываем короткую подсказку по использованию CLI.
             Console.WriteLine("Введите команду. Для справки: help");
-            // Подсказываем способ выхода.
             Console.WriteLine("Для выхода: exit");
             Console.WriteLine();
 
-            // Основной цикл живёт до команды exit или quit.
+            // Основной цикл продолжается, пока пользователь явно не введёт exit или quit.
             while (true)
             {
-                // Показываем приглашение ввода.
+                // Печатаем приглашение ввода.
                 Console.Write("vn> ");
-                // Считываем команду пользователя.
+                // Считываем строку пользователя.
                 string input = Console.ReadLine();
 
-                // Пустой ввод пропускаем.
+                // Пустые строки просто игнорируем.
                 if (string.IsNullOrWhiteSpace(input))
                     continue;
 
-                // Нормализуем строку.
+                // Убираем пробелы по краям.
                 input = input.Trim();
 
-                // Выход обрабатывается до поиска по реестру.
+                // Команды выхода обрабатываются отдельно до поиска в реестре.
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase) ||
                     input.Equals("quit", StringComparison.OrdinalIgnoreCase))
                 {
@@ -69,14 +73,14 @@ namespace CursovoyProjectxDxD
                     break;
                 }
 
-                // Разбиваем строку на аргументы.
+                // Разбиваем строку на массив аргументов.
                 string[] commandArgs = SplitCommandLine(input);
-                // Строим ключ для поиска команды.
+                // По массиву аргументов определяем ключ команды.
                 string commandKey = BuildCommandKey(commandArgs);
 
                 // Переменная под найденную команду.
                 ICommand command;
-                // Ищем команду в реестре.
+                // Пробуем найти обработчик команды в реестре.
                 if (!registry.TryGet(commandKey, out command))
                 {
                     Console.WriteLine("Неизвестная команда.");
@@ -89,23 +93,50 @@ namespace CursovoyProjectxDxD
                 {
                     // Создаём контекст текущего выполнения.
                     CommandContext context = new CommandContext(commandArgs, serviceProvider);
-                    // Запускаем команду.
+                    // Выполняем команду.
                     CommandResult result = await command.ExecuteAsync(context);
 
-                    // Показываем ответ команды.
+                    // Печатаем сообщение команды.
                     Console.WriteLine(result.Message);
                     Console.WriteLine();
                 }
                 catch (Exception ex)
                 {
-                    // Ошибка одной команды не должна завершать весь CLI.
+                    // Ошибка одной команды не должна завершать всё приложение.
                     Console.WriteLine("Ошибка выполнения команды: " + ex.Message);
                     Console.WriteLine();
                 }
             }
 
-            // Возвращаем код успешного завершения.
             return 0;
+        }
+
+        // Показывает информацию о доступности обновления при старте приложения.
+        private static async Task PrintStartupUpdateInfoAsync(ServiceProvider serviceProvider)
+        {
+            try
+            {
+                // Получаем сервис работы с GitHub Releases.
+                GitHubReleaseService releaseService = serviceProvider.GetRequiredService<GitHubReleaseService>();
+                // Выполняем сетевую проверку релиза.
+                AppUpdateInfo updateInfo = await releaseService.CheckForUpdateAsync();
+
+                // Если новая версия найдена, сообщаем об этом пользователю.
+                if (updateInfo.IsAvailable)
+                {
+                    Console.WriteLine("Доступно обновление до версии " + updateInfo.LatestVersion + ".");
+                }
+                else
+                {
+                    // Если новой версии нет, явно говорим, что всё актуально.
+                    Console.WriteLine("Обновление не требуется. Установлена актуальная версия.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ошибка проверки обновления не должна мешать запуску CLI.
+                Console.WriteLine("Не удалось проверить обновления: " + ex.Message);
+            }
         }
 
         // Конфигурируем сервисы, доступные командам.
@@ -114,22 +145,16 @@ namespace CursovoyProjectxDxD
             // Создаём коллекцию регистраций сервисов.
             ServiceCollection services = new ServiceCollection();
 
-            // Реестр команд нужен во время всей сессии приложения.
+            // Реестр команд живёт на протяжении всей сессии приложения.
             services.AddSingleton<CommandRegistry>();
-
-            // Один HttpClient переиспользуется для всех сетевых обращений.
-            services.AddSingleton<HttpClient>(provider =>
-            {
-                HttpClient client = new HttpClient();
-                return client;
-            });
-
-            // Сервис чтения релизов из GitHub.
+            // Один HttpClient переиспользуется всеми сетевыми запросами приложения.
+            services.AddSingleton(new HttpClient());
+            // Сервис чтения релизов нужен командам update и стартовой проверке.
             services.AddSingleton<GitHubReleaseService>();
-            // Сервис запуска внешнего установщика.
+            // Сервис запуска внешнего установщика нужен для update apply.
             services.AddSingleton<InstallerLauncherService>();
 
-            // Строим итоговый ServiceProvider.
+            // Собираем итоговый контейнер зависимостей.
             return services.BuildServiceProvider();
         }
 
@@ -138,18 +163,18 @@ namespace CursovoyProjectxDxD
         {
             // Команда справки.
             registry.Register(new HelpCommand(registry));
-            // Команда версии.
+            // Команда вывода версии.
             registry.Register(new VersionCommand());
-            // Команда проверки обновления.
+            // Команда проверки доступности обновления.
             registry.Register(new UpdateCheckCommand());
-            // Команда применения обновления.
+            // Команда запуска установщика обновления.
             registry.Register(new UpdateApplyCommand());
         }
 
         // Нормализуем массив аргументов в ключ команды.
         private static string BuildCommandKey(string[] args)
         {
-            // При пустом вводе безопасно возвращаем help.
+            // Пустой ввод безопасно сводим к help.
             if (args == null || args.Length == 0)
                 return "help";
 
@@ -179,7 +204,7 @@ namespace CursovoyProjectxDxD
                 }
             }
 
-            // Всё остальное возвращаем как есть.
+            // Для всего остального возвращаем строку как есть.
             return string.Join(" ", args).Trim();
         }
 
@@ -192,15 +217,15 @@ namespace CursovoyProjectxDxD
 
             // Список готовых аргументов.
             var result = new System.Collections.Generic.List<string>();
-            // Флаг режима внутри кавычек.
+            // Флаг, показывающий, находимся ли мы внутри кавычек.
             bool inQuotes = false;
             // Буфер текущего аргумента.
             var current = new System.Text.StringBuilder();
 
-            // Посимвольно разбираем командную строку.
+            // Посимвольно разбираем строку ввода.
             foreach (char ch in commandLine)
             {
-                // Кавычка только меняет режим разбора.
+                // Кавычка переключает режим разбора, но не входит в аргумент.
                 if (ch == '"')
                 {
                     inQuotes = !inQuotes;
@@ -212,24 +237,26 @@ namespace CursovoyProjectxDxD
                 {
                     if (current.Length > 0)
                     {
+                        // Сохраняем накопленный аргумент.
                         result.Add(current.ToString());
+                        // Очищаем буфер под следующий.
                         current.Clear();
                     }
                 }
                 else
                 {
-                    // Любой другой символ попадает в текущий аргумент.
+                    // Обычный символ добавляем в текущий аргумент.
                     current.Append(ch);
                 }
             }
 
-            // Добавляем последний накопленный аргумент.
+            // Не забываем добавить последний аргумент после завершения цикла.
             if (current.Length > 0)
             {
                 result.Add(current.ToString());
             }
 
-            // Возвращаем итоговый массив.
+            // Возвращаем готовый массив аргументов.
             return result.ToArray();
         }
     }

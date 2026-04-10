@@ -1,26 +1,25 @@
 using System.Threading;
 using System.Threading.Tasks;
-using VnInstaller.Core;
 using VnInstaller.Models;
 
 namespace VnInstaller.Services
 {
-    // Координатор полного сценария установки или обновления.
+    // Координатор полного сценария установки.
     public sealed class InstallerOrchestrator
     {
-        // Сервис чтения информации о релизе.
+        // Сервис обращения к GitHub Releases.
         private readonly GitHubReleaseService _gitHubReleaseService;
-        // Сервис скачивания архива.
+        // Сервис скачивания zip-архива релиза.
         private readonly ReleaseDownloadService _releaseDownloadService;
-        // Сервис распаковки архива.
+        // Сервис распаковки архива во временную папку.
         private readonly ArchiveExtractorService _archiveExtractorService;
-        // Сервис ожидания завершения основного процесса.
+        // Сервис ожидания завершения обновляемого процесса.
         private readonly ProcessWaitService _processWaitService;
-        // Сервис копирования файлов.
+        // Сервис копирования файлов в каталог установки.
         private readonly FileDeploymentService _fileDeploymentService;
-        // Сервис запуска приложения после установки.
+        // Сервис запуска основного приложения после установки.
         private readonly AppStarterService _appStarterService;
-        // Логгер сценария установки.
+        // Логгер установщика.
         private readonly FileLogger _logger;
 
         // Все зависимости получаем через конструктор.
@@ -42,27 +41,27 @@ namespace VnInstaller.Services
             _logger = logger;
         }
 
-        // Выполняет полный сценарий установки или обновления.
-        public async Task<AppUpdateInfo> ExecuteAsync(InstallerArguments installerArguments, CancellationToken cancellationToken = default(CancellationToken))
+        // Выполняет полный сценарий установки и обновления в одном режиме.
+        public async Task<AppUpdateInfo> ExecuteAsync(string targetDirectory, string appExePath, int? appProcessId, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Получаем сведения о последнем релизе.
+            // Сначала получаем сведения о последнем релизе.
             AppUpdateInfo updateInfo = await _gitHubReleaseService.GetLatestReleaseAsync(cancellationToken);
-            // Пишем версию релиза в лог.
+            // Пишем найденную версию в лог.
             _logger.Info("Latest release version: " + updateInfo.LatestVersion);
 
             // Скачиваем zip-архив релиза.
             string archivePath = await _releaseDownloadService.DownloadAsync(updateInfo, cancellationToken);
-            // Распаковываем архив во временную папку.
+            // Распаковываем архив во временный каталог.
             string extractedDirectory = _archiveExtractorService.Extract(archivePath, updateInfo.LatestVersion);
 
-            // При обновлении ждём завершения основного приложения.
-            _processWaitService.WaitForExit(installerArguments.AppProcessId);
-            // Копируем распакованные файлы в целевой каталог.
-            _fileDeploymentService.Deploy(extractedDirectory, installerArguments.TargetDirectory);
-            // Запускаем основное приложение после завершения копирования.
-            _appStarterService.Start(installerArguments.AppExePath);
+            // Дожидаемся завершения обновляемого экземпляра основного приложения.
+            _processWaitService.WaitForExit(appProcessId);
+            // Копируем новые файлы в целевую папку установки.
+            _fileDeploymentService.Deploy(extractedDirectory, targetDirectory);
+            // После успешного копирования запускаем основное приложение.
+            _appStarterService.Start(appExePath);
 
-            // Возвращаем информацию об установленной версии.
+            // Возвращаем сведения об установленной версии.
             return updateInfo;
         }
     }

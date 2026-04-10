@@ -85,6 +85,7 @@
     <Compile Include="Commands\UpdateApplyCommand.cs" />
     <Compile Include="Commands\UpdateCheckCommand.cs" />
     <Compile Include="Commands\VersionCommand.cs" />
+    <Compile Include="Core\AppVersionProvider.cs" />
     <Compile Include="Core\CommandContext.cs" />
     <Compile Include="Core\CommandRegistry.cs" />
     <Compile Include="Core\CommandResult.cs" />

@@ -1,8 +1,8 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using VnInstaller.Core;
 using VnInstaller.Models;
 using VnInstaller.Services;
 
@@ -11,145 +11,161 @@ namespace VnInstaller
     // Точка входа отдельного приложения-установщика.
     internal class Program
     {
+        // Имя корневой папки установки.
+        private const string InstallFolderName = "vn";
+        // Имя папки приложения внутри каталога установки.
+        private const string AppFolderName = "app";
+        // Имя exe-файла основного приложения.
+        private const string AppExeName = "CursovoyProjectxDxD.exe";
+        // Имя служебного файла с PID обновляемого процесса.
+        private const string ProcessIdFileName = "vn-app.pid";
+
         // Синхронная точка входа для .NET Framework.
         private static int Main(string[] args)
         {
             try
             {
-                // Весь основной сценарий вынесен в асинхронный метод.
-                return MainAsync(args).GetAwaiter().GetResult();
+                return MainAsync().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
-                // Критическая ошибка верхнего уровня показывается пользователю.
                 Console.WriteLine("Критическая ошибка установщика: " + ex.Message);
                 WaitForUser();
                 return 1;
             }
         }
 
-        // Основной сценарий работы установщика.
-        private static async Task<int> MainAsync(string[] args)
+        // Основной сценарий работы установщика в единственном режиме.
+        private static async Task<int> MainAsync()
         {
-            // Переменная для разобранных аргументов.
-            InstallerArguments installerArguments;
-            // Переменная для текста ошибки разбора.
-            string parseError;
+            // Название окна нужно, чтобы отличать установщик от основного приложения.
+            Console.Title = "vn-installer";
 
-            // Проверяем корректность аргументов запуска.
-            if (!InstallerArguments.TryParse(args, out installerArguments, out parseError))
-            {
-                Console.WriteLine(parseError);
-                WaitForUser();
-                return 1;
-            }
+            // Вычисляем стандартную папку установки.
+            string targetDirectory = GetTargetDirectory();
+            // Вычисляем полный путь к exe приложения после установки.
+            string appExePath = Path.Combine(targetDirectory, AppExeName);
+            // Пытаемся считать PID обновляемого приложения из служебного файла.
+            int? appProcessId = TryReadAppProcessId();
+            // Формируем путь к логу установщика.
+            string logFilePath = Path.Combine(targetDirectory, "vn-installer.log");
 
             // Создаём контейнер сервисов установщика.
-            ServiceProvider serviceProvider = ConfigureServices(installerArguments);
-            // Получаем файловый логгер.
+            ServiceProvider serviceProvider = ConfigureServices(logFilePath);
+            // Получаем логгер.
             FileLogger logger = serviceProvider.GetRequiredService<FileLogger>();
-            // Получаем оркестратор установки.
+            // Получаем координатор сценария установки.
             InstallerOrchestrator orchestrator = serviceProvider.GetRequiredService<InstallerOrchestrator>();
 
             try
             {
-                // Для ручной установки показываем один текст.
-                if (installerArguments.IsManualInstall)
-                {
-                    Console.WriteLine("Запущен установщик vn.");
-                    Console.WriteLine("Будет установлена последняя релизная версия основного приложения.");
-                }
-                else
-                {
-                    // Для режима обновления показываем другой текст.
-                    Console.WriteLine("Запущен установщик обновления vn.");
-                    Console.WriteLine("Подготовка обновления...");
-                }
-
+                // Показываем пользователю стартовую информацию.
+                Console.WriteLine("Запущен установщик vn.");
+                Console.WriteLine("Будет установлена последняя релизная версия основного приложения.");
                 Console.WriteLine();
 
-                // Пишем стартовую информацию в лог.
+                // Пишем стартовые данные в лог для диагностики.
                 logger.Info("VnInstaller started.");
-                logger.Info("Command: " + installerArguments.Command);
-                logger.Info("Target directory: " + installerArguments.TargetDirectory);
-                logger.Info("App exe path: " + installerArguments.AppExePath);
-                logger.Info("Process id: " + (installerArguments.AppProcessId.HasValue ? installerArguments.AppProcessId.Value.ToString() : "not specified"));
+                logger.Info("Target directory: " + targetDirectory);
+                logger.Info("App exe path: " + appExePath);
+                logger.Info("Process id: " + (appProcessId.HasValue ? appProcessId.Value.ToString() : "not specified"));
 
-                // Выполняем полный сценарий установки или обновления.
-                AppUpdateInfo updateInfo = await orchestrator.ExecuteAsync(installerArguments);
+                // Выполняем полный сценарий скачивания, распаковки, копирования и запуска.
+                AppUpdateInfo updateInfo = await orchestrator.ExecuteAsync(targetDirectory, appExePath, appProcessId);
 
-                // Пишем в лог успешное завершение.
+                // Фиксируем успешное завершение в логе.
                 logger.Info("VnInstaller finished successfully.");
 
                 Console.WriteLine();
-                // Для ручной установки сообщаем путь и версию.
-                if (installerArguments.IsManualInstall)
-                {
-                    Console.WriteLine("Установка успешно выполнена. Установлена версия " + updateInfo.LatestVersion + ".");
-                    Console.WriteLine("Приложение установлено в: " + installerArguments.TargetDirectory);
-                }
-                else
-                {
-                    // Для обновления сообщаем путь и новую версию.
-                    Console.WriteLine("Обновление успешно до версии " + updateInfo.LatestVersion + ".");
-                    Console.WriteLine("Обновление установлено в: " + installerArguments.TargetDirectory);
-                }
-
-                // После установки основное приложение уже запущено.
+                // Показываем установленную версию.
+                Console.WriteLine("Установка успешно выполнена. Установлена версия " + updateInfo.LatestVersion + ".");
+                // Показываем путь, куда установлены файлы.
+                Console.WriteLine("Приложение установлено в: " + targetDirectory);
+                // Сообщаем, что после установки приложение уже запущено.
                 Console.WriteLine("Основное приложение уже запущено.");
                 WaitForUser();
                 return 0;
             }
             catch (Exception ex)
             {
-                // Любая ошибка сценария записывается в лог.
+                // Любая ошибка попадает в лог для последующей диагностики.
                 logger.Error("Installer failed.", ex);
                 Console.WriteLine();
                 Console.WriteLine("Ошибка установки: " + ex.Message);
-                Console.WriteLine("Подробности записаны в лог: " + installerArguments.GetLogFilePath());
-                Console.WriteLine("Целевая папка установки: " + installerArguments.TargetDirectory);
+                Console.WriteLine("Подробности записаны в лог: " + logFilePath);
+                Console.WriteLine("Целевая папка установки: " + targetDirectory);
                 WaitForUser();
                 return 1;
             }
         }
 
         // Конфигурирует все сервисы установщика.
-        private static ServiceProvider ConfigureServices(InstallerArguments installerArguments)
+        private static ServiceProvider ConfigureServices(string logFilePath)
         {
-            // Создаём коллекцию регистраций.
+            // Создаём коллекцию регистраций сервисов.
             ServiceCollection services = new ServiceCollection();
 
-            // Регистрируем единый HttpClient.
-            services.AddSingleton<HttpClient>(provider =>
-            {
-                return new HttpClient();
-            });
-
-            // Регистрируем логгер с конкретным путём к файлу лога.
-            services.AddSingleton(new FileLogger(installerArguments.GetLogFilePath()));
-            // Регистрируем сервис чтения релизов.
+            // Один HttpClient используется для всех HTTP-запросов установщика.
+            services.AddSingleton(new HttpClient());
+            // Логгер создаётся сразу с готовым путём к файлу лога.
+            services.AddSingleton(new FileLogger(logFilePath));
+            // Сервис чтения информации о релизе.
             services.AddSingleton<GitHubReleaseService>();
-            // Регистрируем сервис скачивания архива.
+            // Сервис скачивания zip-архива релиза.
             services.AddSingleton<ReleaseDownloadService>();
-            // Регистрируем сервис распаковки архива.
+            // Сервис распаковки архива.
             services.AddSingleton<ArchiveExtractorService>();
-            // Регистрируем сервис ожидания завершения процесса.
+            // Сервис ожидания завершения основного процесса.
             services.AddSingleton<ProcessWaitService>();
-            // Регистрируем сервис развёртывания файлов.
+            // Сервис копирования файлов в каталог установки.
             services.AddSingleton<FileDeploymentService>();
-            // Регистрируем сервис запуска приложения.
+            // Сервис запуска основного приложения после установки.
             services.AddSingleton<AppStarterService>();
-            // Регистрируем оркестратор всего сценария.
+            // Оркестратор всего сценария установки.
             services.AddSingleton<InstallerOrchestrator>();
 
-            // Возвращаем готовый ServiceProvider.
+            // Собираем и возвращаем контейнер сервисов.
             return services.BuildServiceProvider();
+        }
+
+        // Возвращает стандартную папку установки приложения.
+        private static string GetTargetDirectory()
+        {
+            // Получаем LocalAppData текущего пользователя.
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            // Формируем итоговую папку установки.
+            return Path.Combine(localAppData, InstallFolderName, AppFolderName);
+        }
+
+        // Читает PID обновляемого процесса из служебного файла рядом с установщиком.
+        private static int? TryReadAppProcessId()
+        {
+            // Служебный файл лежит рядом с временной копией установщика.
+            string processIdFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ProcessIdFileName);
+            // Если файла нет, значит установщик запущен вручную и ждать нечего.
+            if (!File.Exists(processIdFilePath))
+            {
+                return null;
+            }
+
+            // Читаем текст PID из файла.
+            string content = File.ReadAllText(processIdFilePath).Trim();
+            // Пытаемся преобразовать его в число.
+            int processId;
+            if (!int.TryParse(content, out processId))
+            {
+                return null;
+            }
+
+            return processId;
         }
 
         // Даёт пользователю время прочитать итоговый текст.
         private static void WaitForUser()
         {
+            // Пустая строка визуально отделяет основное сообщение.
             Console.WriteLine();
+            // Не закрываем окно сразу, чтобы пользователь успел прочитать результат.
             Console.WriteLine("Нажмите Enter, чтобы закрыть установщик.");
             Console.ReadLine();
         }

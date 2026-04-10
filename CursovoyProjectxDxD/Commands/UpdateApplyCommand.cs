@@ -1,6 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CursovoyProjectxDxD.Core;
@@ -24,7 +22,7 @@ namespace CursovoyProjectxDxD.Commands
             get { return "Запуск внешнего установщика обновления"; }
         }
 
-        // Проверяет наличие новой версии и передаёт управление vn-installer.
+        // Проверяет наличие новой версии и запускает vn-installer без аргументов.
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис проверки релизов.
@@ -34,22 +32,15 @@ namespace CursovoyProjectxDxD.Commands
             // Проверяем, доступно ли обновление.
             AppUpdateInfo info = await releaseService.CheckForUpdateAsync(cancellationToken);
 
-            // Если новой версии нет, ничего не устанавливаем.
+            // Если новой версии нет, ничего не делаем.
             if (!info.IsAvailable)
             {
                 return CommandResult.Ok("Обновление не требуется.");
             }
 
-            // Находим путь к текущему exe.
-            string appExePath = Process.GetCurrentProcess().MainModule.FileName;
-            // Определяем каталог приложения.
-            string appDirectory = Path.GetDirectoryName(appExePath);
-            // Считываем PID текущего процесса.
-            int currentProcessId = Process.GetCurrentProcess().Id;
-
-            // Запускаем установщик.
-            bool started = launcherService.Launch(appDirectory, appExePath, currentProcessId);
-            // Если запуск не удался, возвращаем ошибку.
+            // Запускаем установщик в единственном режиме без аргументов.
+            bool started = launcherService.Launch();
+            // Если старт не удался, возвращаем ошибку.
             if (!started)
             {
                 return CommandResult.Fail("Не удалось запустить vn-installer.exe.");
@@ -60,7 +51,7 @@ namespace CursovoyProjectxDxD.Commands
             // Предупреждаем о полном закрытии основного приложения.
             Console.WriteLine("Основное приложение будет полностью закрыто для установки обновления.");
 
-            // Завершаем основной процесс, чтобы его файлы можно было заменить.
+            // Полностью завершаем основной процесс, чтобы его файлы можно было заменить.
             Environment.Exit(0);
             // Формальный возврат нужен только из-за сигнатуры метода.
             return CommandResult.Ok("Установщик запущен.");

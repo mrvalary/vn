@@ -1,6 +1,4 @@
 using CursovoyProjectxDxD.Core;
-using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,13 +12,11 @@ namespace CursovoyProjectxDxD.Commands
         // Описание команды.
         public string Description => "Показ версии клиента";
 
-        // Читает версию из assembly и возвращает её пользователю.
+        // Возвращает текущую версию приложения.
         public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default)
         {
-            // Получаем объект Version из исполняемой сборки.
-            Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            // Формируем строку версии.
-            string displayVersion = version != null ? version.ToString(3) : "1.0.0";
+            // Получаем строку версии через единый провайдер.
+            string displayVersion = AppVersionProvider.GetCurrentVersion();
             // Возвращаем результат в стандартном формате.
             return Task.FromResult(CommandResult.Ok("vn version " + displayVersion));
         }

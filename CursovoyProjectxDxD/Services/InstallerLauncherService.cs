@@ -9,70 +9,71 @@ namespace CursovoyProjectxDxD.Services
     {
         // Имя exe-файла установщика.
         private const string InstallerExeName = "vn-installer.exe";
+        // Имя файла с PID обновляемого процесса.
+        private const string ProcessIdFileName = "vn-app.pid";
 
-        // Запускает установщик из временной папки.
-        public bool Launch(string targetDirectory, string appExePath, int appProcessId)
+        // Запускает установщик из временной папки в единственном режиме без аргументов.
+        public bool Launch()
         {
-            // Путь к оригинальному установщику рядом с приложением.
-            string sourceInstallerPath = Path.Combine(targetDirectory, InstallerExeName);
-            // Если установщик отсутствует, запуск невозможен.
+            // Получаем путь к текущему exe основного приложения.
+            string appExePath = Process.GetCurrentProcess().MainModule.FileName;
+            // Определяем каталог, где лежат файлы приложения и установщика.
+            string sourceDirectory = Path.GetDirectoryName(appExePath);
+            // Строим путь к оригинальному vn-installer.exe рядом с приложением.
+            string sourceInstallerPath = Path.Combine(sourceDirectory, InstallerExeName);
+
+            // Если установщик не найден, запуск невозможен.
             if (!File.Exists(sourceInstallerPath))
             {
                 return false;
             }
 
-            // Создаём временную рабочую копию установщика.
-            string runtimeDirectory = PrepareRuntimeDirectory(targetDirectory);
-            // Путь к exe во временной папке.
+            // Считываем PID текущего процесса, чтобы установщик ждал именно этот экземпляр.
+            int currentProcessId = Process.GetCurrentProcess().Id;
+            // Подготавливаем временную папку запуска и записываем туда PID.
+            string runtimeDirectory = PrepareRuntimeDirectory(sourceDirectory, currentProcessId);
+            // Получаем путь к временной копии установщика.
             string runtimeInstallerPath = Path.Combine(runtimeDirectory, InstallerExeName);
 
-            // Формируем аргументы режима apply.
-            string arguments =
-                "apply " +
-                "--targetDir " + Quote(targetDirectory) + " " +
-                "--appExe " + Quote(appExePath) + " " +
-                "--pid " + appProcessId.ToString();
-
-            // Запускаем процесс установщика.
+            // Запускаем временную копию установщика.
             Process process = Process.Start(new ProcessStartInfo
             {
                 FileName = runtimeInstallerPath,
-                Arguments = arguments,
                 WorkingDirectory = runtimeDirectory,
                 UseShellExecute = true
             });
 
-            // Возвращаем признак успешного старта.
             return process != null;
         }
 
         // Подготавливает каталог runtime во временной папке.
-        private static string PrepareRuntimeDirectory(string sourceDirectory)
+        private static string PrepareRuntimeDirectory(string sourceDirectory, int processId)
         {
-            // Формируем путь к временной папке.
+            // Временная папка нужна, чтобы установщик не держал локи на свои файлы в каталоге приложения.
             string runtimeDirectory = Path.Combine(Path.GetTempPath(), "vn-installer-runtime");
 
-            // Если папка уже существовала, удаляем её целиком.
+            // Перед каждым запуском очищаем старую временную папку.
             if (Directory.Exists(runtimeDirectory))
             {
                 Directory.Delete(runtimeDirectory, true);
             }
 
-            // Создаём чистую директорию.
+            // Создаём чистую директорию runtime.
             Directory.CreateDirectory(runtimeDirectory);
-
-            // Копируем в неё установщик и его зависимости.
+            // Копируем в неё exe, config и dll установщика.
             CopyInstallerRuntime(sourceDirectory, runtimeDirectory);
+            // Сохраняем PID обновляемого процесса в служебный файл.
+            WriteProcessIdFile(runtimeDirectory, processId);
             return runtimeDirectory;
         }
 
         // Копирует нужные файлы во временную директорию.
         private static void CopyInstallerRuntime(string sourceDirectory, string runtimeDirectory)
         {
-            // Берём только файлы верхнего уровня.
+            // Берём только файлы верхнего уровня рядом с приложением.
             string[] runtimeFiles = Directory.GetFiles(sourceDirectory, "*.*", SearchOption.TopDirectoryOnly);
 
-            // Перебираем все найденные файлы.
+            // Перебираем найденные файлы.
             for (int i = 0; i < runtimeFiles.Length; i++)
             {
                 // Получаем расширение текущего файла.
@@ -80,7 +81,7 @@ namespace CursovoyProjectxDxD.Services
                 // Получаем имя файла без пути.
                 string fileName = Path.GetFileName(runtimeFiles[i]);
 
-                // Пропускаем всё, что не нужно для старта установщика.
+                // Пропускаем всё, что не нужно для запуска установщика.
                 if (!string.Equals(fileName, InstallerExeName, StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(fileName, "vn-installer.exe.config", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(fileName, "vn-installer.pdb", StringComparison.OrdinalIgnoreCase) &&
@@ -96,10 +97,13 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Заключает строку в двойные кавычки.
-        private static string Quote(string value)
+        // Записывает PID текущего приложения в служебный файл для установщика.
+        private static void WriteProcessIdFile(string runtimeDirectory, int processId)
         {
-            return "\"" + value + "\"";
+            // Путь к служебному файлу во временной папке.
+            string processIdFilePath = Path.Combine(runtimeDirectory, ProcessIdFileName);
+            // Сохраняем PID как обычный текст.
+            File.WriteAllText(processIdFilePath, processId.ToString());
         }
     }
 }
