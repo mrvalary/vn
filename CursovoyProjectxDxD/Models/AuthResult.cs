@@ -3,50 +3,55 @@ namespace CursovoyProjectxDxD.Models
     // Результат регистрации или входа пользователя.
     public sealed class AuthResult
     {
-        // Признак успешного выполнения операции.
+        // Показывает, успешно ли завершилась операция.
         public bool IsSuccess { get; }
 
-        // Текстовое сообщение для консоли.
+        // Сообщение, которое можно сразу вывести пользователю в консоль.
         public string Message { get; }
 
-        // Идентификатор пользователя в таблице users.
+        // Id пользователя из таблицы users, если операция входа успешна.
         public int? UserId { get; }
 
-        // Логин пользователя, успешно прошедшего аутентификацию.
+        // Логин пользователя, если операция входа успешна.
         public string Login { get; }
 
-        // Приватный конструктор ограничивает создание результата фабричными методами.
-        private AuthResult(bool isSuccess, string message, int? userId, string login)
+        // Системное название роли пользователя: user, admin или statistician.
+        public string RoleName { get; }
+
+        // Закрытый конструктор заставляет создавать результат только через фабричные методы.
+        private AuthResult(bool isSuccess, string message, int? userId, string login, string roleName)
         {
-            // Сохраняем итог операции.
+            // Сохраняем флаг успешности операции.
             IsSuccess = isSuccess;
-            // Сохраняем сообщение для пользователя.
+            // Сохраняем текст ответа для консоли.
             Message = message;
-            // Сохраняем идентификатор пользователя, если он известен.
+            // Сохраняем id пользователя, если он есть.
             UserId = userId;
-            // Сохраняем логин пользователя, если он известен.
+            // Сохраняем логин пользователя, если он есть.
             Login = login;
+            // Сохраняем роль пользователя, если она есть.
+            RoleName = roleName;
         }
 
-        // Создаёт успешный результат без пользовательских данных.
+        // Создаёт успешный результат без пользовательских данных, например после регистрации.
         public static AuthResult Success(string message)
         {
-            // Возвращаем простой успешный ответ.
-            return new AuthResult(true, message, null, null);
+            // Для регистрации сессия ещё не открывается, поэтому id, login и role не нужны.
+            return new AuthResult(true, message, null, null, null);
         }
 
-        // Создаёт успешный результат входа с данными пользователя.
-        public static AuthResult Success(string message, int userId, string login)
+        // Создаёт успешный результат входа с данными пользователя и его ролью.
+        public static AuthResult Success(string message, int userId, string login, string roleName)
         {
-            // Возвращаем успешный ответ с идентификатором и логином пользователя.
-            return new AuthResult(true, message, userId, login);
+            // Эти данные затем попадут в AuthSessionService.
+            return new AuthResult(true, message, userId, login, roleName);
         }
 
-        // Создаёт неуспешный результат.
+        // Создаёт неуспешный результат операции.
         public static AuthResult Failure(string message)
         {
-            // Возвращаем ответ с ошибкой.
-            return new AuthResult(false, message, null, null);
+            // При ошибке пользовательские данные не заполняются.
+            return new AuthResult(false, message, null, null, null);
         }
     }
 }

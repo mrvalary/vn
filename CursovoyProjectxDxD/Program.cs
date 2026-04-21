@@ -76,6 +76,8 @@ namespace CursovoyProjectxDxD
             AuthService authService = serviceProvider.GetRequiredService<AuthService>();
             // Получаем сервис текущей пользовательской сессии.
             AuthSessionService sessionService = serviceProvider.GetRequiredService<AuthSessionService>();
+            // Получаем сервис журнала безопасности.
+            SecurityLogService securityLogService = serviceProvider.GetRequiredService<SecurityLogService>();
 
             // Меню повторяется, пока пользователь не войдёт или не отменит запуск.
             while (true)
@@ -97,7 +99,7 @@ namespace CursovoyProjectxDxD
                 // Если пользователь выбрал вход, запускаем форму входа.
                 if (key.KeyChar == '1')
                 {
-                    if (await LoginUserAsync(authService, sessionService))
+                    if (await LoginUserAsync(authService, sessionService, securityLogService))
                     {
                         return true;
                     }
@@ -108,7 +110,7 @@ namespace CursovoyProjectxDxD
                 // Если пользователь выбрал регистрацию, запускаем форму регистрации.
                 if (key.KeyChar == '2')
                 {
-                    await RegisterUserAsync(authService);
+                    await RegisterUserAsync(authService, securityLogService);
                     continue;
                 }
 
@@ -124,7 +126,7 @@ namespace CursovoyProjectxDxD
         }
 
         // Выполняет вход пользователя.
-        private static async Task<bool> LoginUserAsync(AuthService authService, AuthSessionService sessionService)
+        private static async Task<bool> LoginUserAsync(AuthService authService, AuthSessionService sessionService, SecurityLogService securityLogService)
         {
             // Перед формой входа очищаем экран.
             Console.Clear();
@@ -145,16 +147,20 @@ namespace CursovoyProjectxDxD
             // После успешного входа запоминаем пользователя и токен серверной сессии.
             if (result.IsSuccess && result.UserId.HasValue)
             {
-                sessionService.SignIn(result.UserId.Value, result.Login);
+                sessionService.SignIn(result.UserId.Value, result.Login, result.RoleName);
+                await securityLogService.WriteCurrentUserEventAsync("login_success", "Пользователь вошёл в систему.", result.Login, CancellationToken.None);
                 return true;
             }
+
+            // Неудачный вход тоже пишем в журнал безопасности.
+            await securityLogService.WriteAnonymousEventAsync(login, "login_failed", result.Message, login, CancellationToken.None);
 
             // При неудачном входе возвращаемся в меню авторизации.
             return false;
         }
 
         // Выполняет регистрацию нового пользователя.
-        private static async Task RegisterUserAsync(AuthService authService)
+        private static async Task RegisterUserAsync(AuthService authService, SecurityLogService securityLogService)
         {
             // Перед формой регистрации очищаем экран.
             Console.Clear();
@@ -169,6 +175,8 @@ namespace CursovoyProjectxDxD
 
             // Регистрируем пользователя через API.
             AuthResult result = await authService.RegisterAsync(login, password, CancellationToken.None);
+            // Регистрацию и ошибку регистрации фиксируем в журнале безопасности.
+            await securityLogService.WriteAnonymousEventAsync(login, result.IsSuccess ? "register_success" : "register_failed", result.Message, login, CancellationToken.None);
             // Показываем сообщение об успехе или ошибке.
             ShowMessage(result.Message, result.IsSuccess);
         }
@@ -183,6 +191,7 @@ namespace CursovoyProjectxDxD
             if (sessionService.IsAuthenticated)
             {
                 Console.WriteLine("Текущий пользователь: " + sessionService.CurrentLogin);
+                Console.WriteLine("Роль: " + sessionService.CurrentRoleDisplayName);
             }
 
             // Печатаем краткую подсказку по работе с CLI.
@@ -207,8 +216,7 @@ namespace CursovoyProjectxDxD
                 input = input.Trim();
 
                 // Команды выхода обрабатываем отдельно.
-                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase) ||
-                    input.Equals("quit", StringComparison.OrdinalIgnoreCase))
+                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("Выход из программы.");
                     break;
@@ -239,6 +247,27 @@ namespace CursovoyProjectxDxD
                     // Печатаем сообщение результата команды.
                     Console.WriteLine(result.Message);
                     Console.WriteLine();
+
+                    // Если команда auth logout очистила сессию, возвращаем пользователя в меню входа.
+                    if (!sessionService.IsAuthenticated)
+                    {
+                        Console.WriteLine("Для продолжения работы войдите в систему снова.");
+                        await Task.Delay(900);
+
+                        bool isAuthorized = await RunAuthorizationMenuAsync(serviceProvider);
+                        if (!isAuthorized)
+                        {
+                            Console.WriteLine("Работа приложения завершена.");
+                            break;
+                        }
+
+                        Console.Clear();
+                        Console.WriteLine("Вы снова вошли в систему как: " + sessionService.CurrentLogin);
+                        Console.WriteLine("Роль: " + sessionService.CurrentRoleDisplayName);
+                        Console.WriteLine("Введите команду. Для справки: help");
+                        Console.WriteLine("Для выхода: exit");
+                        Console.WriteLine();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -300,6 +329,10 @@ namespace CursovoyProjectxDxD
             services.AddSingleton<AuthSessionService>();
             // Регистрируем сервис работы с заметками через PostgreSQL.
             services.AddSingleton<NoteService>();
+            // Регистрируем сервис журнала безопасности.
+            services.AddSingleton<SecurityLogService>();
+            // Регистрируем сервис статистики нагрузки CPU/RAM/HDD.
+            services.AddSingleton<SystemMonitoringService>();
 
             // Собираем и возвращаем готовый контейнер.
             return services.BuildServiceProvider();
@@ -316,6 +349,22 @@ namespace CursovoyProjectxDxD
             registry.Register(new NoteAddCommand());
             // Команда удаления заметки.
             registry.Register(new NoteDeleteCommand());
+            // Команда редактирования своей заметки.
+            registry.Register(new NoteEditCommand());
+            // Команда просмотра списка заметок.
+            registry.Register(new NoteListCommand());
+            // Команда поиска заметок по тексту.
+            registry.Register(new NoteSearchCommand());
+            // Команда выхода из текущего аккаунта.
+            registry.Register(new AuthLogoutCommand());
+            // Админские команды управления пользователями.
+            registry.Register(new AdminUserCommand());
+            // Админские команды просмотра и редактирования любых заметок.
+            registry.Register(new AdminNoteCommand());
+            // Команда просмотра журнала безопасности.
+            registry.Register(new SecurityLogsCommand());
+            // Команда просмотра и сбора статистики нагрузки устройств.
+            registry.Register(new StatCommand());
             // Команда проверки обновлений.
             registry.Register(new UpdateCheckCommand());
             // Команда запуска обновления.
@@ -352,6 +401,53 @@ namespace CursovoyProjectxDxD
                     args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
                 {
                     return "nt del";
+                }
+
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("edit", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt edit";
+                }
+
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("list", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt list";
+                }
+
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("search", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt search";
+                }
+
+                if (args[0].Equals("auth", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("logout", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "auth logout";
+                }
+
+                if (args[0].Equals("admin", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("user", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "admin user";
+                }
+
+                if (args[0].Equals("admin", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("nt", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "admin nt";
+                }
+
+                if (args[0].Equals("sec", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("logs", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "sec logs";
+                }
+
+                if (args[0].Equals("stat", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "stat";
                 }
 
                 if (args[0].Equals("update", StringComparison.OrdinalIgnoreCase) &&

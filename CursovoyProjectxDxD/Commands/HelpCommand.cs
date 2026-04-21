@@ -1,47 +1,71 @@
-using CursovoyProjectxDxD.Core;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CursovoyProjectxDxD.Core;
+using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда вывода списка всех CLI-команд.
+    // Команда вывода списка доступных CLI-команд.
     public sealed class HelpCommand : ICommand
     {
-        // Реестр команд нужен для динамического построения справки.
+        // Реестр команд нужен для динамической справки.
         private readonly CommandRegistry _registry;
 
         // Получаем реестр через конструктор.
         public HelpCommand(CommandRegistry registry)
         {
+            // Сохраняем реестр команд.
             _registry = registry;
         }
 
         // Имя команды.
         public string Name => "help";
-        // Краткое описание команды.
-        public string Description => "Вывод карты всех команд";
 
-        // Формирует справку на основе текущего содержимого реестра.
-        public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default)
+        // Описание команды.
+        public string Description => "Вывод карты всех доступных команд";
+
+        // Формирует справку на основе текущего реестра команд.
+        public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // StringBuilder используется для сборки многострочного текста.
-            var sb = new StringBuilder();
-            // Пишем заголовок справки.
-            sb.AppendLine("Доступные команды:");
-            // Добавляем пустую строку для читаемости.
-            sb.AppendLine();
+            // Получаем текущую сессию, чтобы скрыть admin-команды от неадминов.
+            AuthSessionService sessionService = context.GetRequiredService<AuthSessionService>();
 
-            // Берём все команды и сортируем их по имени.
-            foreach (var command in _registry.GetAll().Values.OrderBy(c => c.Name))
+            // StringBuilder удобен для многострочного текста.
+            StringBuilder builder = new StringBuilder();
+
+            // Заголовок справки.
+            builder.AppendLine("Доступные команды:");
+            builder.AppendLine();
+
+            // Сортируем команды по имени, чтобы help был стабильным и читаемым.
+            foreach (ICommand command in _registry.GetAll().Values.OrderBy(command => command.Name))
             {
-                // Каждая команда печатается одной строкой.
-                sb.AppendLine(command.Name + " - " + command.Description);
+                // Команды admin видит только пользователь с ролью admin.
+                if (command.Name.StartsWith("admin ") && !sessionService.IsAdmin())
+                {
+                    continue;
+                }
+
+                // Команды security видит только админ или статист.
+                if (command.Name.StartsWith("sec ") && !sessionService.CanViewSecurityLogs())
+                {
+                    continue;
+                }
+
+                // Команды stat видит только админ или статист.
+                if (command.Name.StartsWith("stat") && !sessionService.CanViewStatistics())
+                {
+                    continue;
+                }
+
+                // Каждая команда выводится одной строкой.
+                builder.AppendLine(command.Name + " - " + command.Description);
             }
 
-            // Возвращаем успешный результат.
-            return Task.FromResult(CommandResult.Ok(sb.ToString()));
+            // Возвращаем готовую справку.
+            return Task.FromResult(CommandResult.Ok(builder.ToString()));
         }
     }
 }

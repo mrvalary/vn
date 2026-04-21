@@ -58,6 +58,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
     </Reference>
@@ -87,8 +88,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\HelpCommand.cs" />
+    <Compile Include="Commands\AuthLogoutCommand.cs" />
+    <Compile Include="Commands\AdminNoteCommand.cs" />
+    <Compile Include="Commands\AdminUserCommand.cs" />
     <Compile Include="Commands\NoteAddCommand.cs" />
     <Compile Include="Commands\NoteDeleteCommand.cs" />
+    <Compile Include="Commands\NoteEditCommand.cs" />
+    <Compile Include="Commands\NoteListCommand.cs" />
+    <Compile Include="Commands\NoteSearchCommand.cs" />
+    <Compile Include="Commands\SecurityLogsCommand.cs" />
+    <Compile Include="Commands\StatCommand.cs" />
     <Compile Include="Commands\UpdateApplyCommand.cs" />
     <Compile Include="Commands\UpdateCheckCommand.cs" />
     <Compile Include="Commands\VersionCommand.cs" />
@@ -102,6 +111,11 @@
     <Compile Include="Models\GitHubAssetDto.cs" />
     <Compile Include="Models\GitHubReleaseDto.cs" />
     <Compile Include="Models\NoteRecord.cs" />
+    <Compile Include="Models\MonitoredDevice.cs" />
+    <Compile Include="Models\SecurityLogRecord.cs" />
+    <Compile Include="Models\SystemMetricRecord.cs" />
+    <Compile Include="Models\UserAccount.cs" />
+    <Compile Include="Models\UserRole.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AuthService.cs" />
@@ -110,6 +124,8 @@
     <Compile Include="Services\GitHubReleaseService.cs" />
     <Compile Include="Services\InstallerLauncherService.cs" />
     <Compile Include="Services\NoteService.cs" />
+    <Compile Include="Services\SecurityLogService.cs" />
+    <Compile Include="Services\SystemMonitoringService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
