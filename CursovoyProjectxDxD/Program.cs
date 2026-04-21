@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using CursovoyProjectxDxD.Commands;
@@ -9,7 +12,7 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD
 {
-    // Главный класс основного приложения.
+    // Главный класс консольного приложения.
     internal class Program
     {
         // Синхронная точка входа нужна для .NET Framework.
@@ -17,55 +20,193 @@ namespace CursovoyProjectxDxD
         {
             try
             {
+                // Перенаправляем выполнение в асинхронный сценарий.
                 return MainAsync(args).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
+                // Любая критическая ошибка верхнего уровня печатается в консоль.
                 Console.WriteLine("Критическая ошибка: " + ex.Message);
                 return 1;
             }
         }
 
-        // Основной сценарий запуска CLI.
+        // Основной сценарий запуска приложения.
         private static async Task<int> MainAsync(string[] args)
         {
-            // Название окна помогает отличать основное приложение от установщика.
+            // Задаём читаемое название окна консоли.
             Console.Title = "vn-app";
+            // Включаем UTF-8, чтобы русские строки отображались корректно.
+            Console.OutputEncoding = Encoding.UTF8;
 
             // Создаём контейнер зависимостей приложения.
             ServiceProvider serviceProvider = ConfigureServices();
             // Получаем реестр команд из контейнера.
             CommandRegistry registry = serviceProvider.GetRequiredService<CommandRegistry>();
-            // Наполняем реестр командами.
+            // Регистрируем все команды CLI.
             RegisterCommands(registry);
 
-            // Печатаем стартовое сообщение.
+            // Сначала просим пользователя пройти авторизацию через API.
+            bool isAuthorized = await RunAuthorizationMenuAsync(serviceProvider);
+
+            // Если пользователь решил выйти до входа, завершаем приложение.
+            if (!isAuthorized)
+            {
+                Console.WriteLine("Работа приложения завершена.");
+                return 0;
+            }
+
+            // После успешного входа очищаем экран от служебных форм авторизации.
+            Console.Clear();
+            // После авторизации приложение выполняет стартовые действия.
             Console.WriteLine("Интерактивная консоль vn запущена.");
-            // Сразу показываем локальную версию приложения.
             Console.WriteLine("Текущая версия приложения: " + AppVersionProvider.GetCurrentVersion());
-            // При старте дополнительно выполняем быструю проверку обновления.
             await PrintStartupUpdateInfoAsync(serviceProvider);
-            // Показываем короткую подсказку по использованию CLI.
+            Console.WriteLine();
+
+            // После авторизации запускаем основную CLI-сессию.
+            await RunCliAsync(serviceProvider, registry);
+            return 0;
+        }
+
+        // Показывает стартовое меню входа и регистрации.
+        private static async Task<bool> RunAuthorizationMenuAsync(ServiceProvider serviceProvider)
+        {
+            // Получаем сервис проверки логина и пароля.
+            AuthService authService = serviceProvider.GetRequiredService<AuthService>();
+            // Получаем сервис текущей пользовательской сессии.
+            AuthSessionService sessionService = serviceProvider.GetRequiredService<AuthSessionService>();
+
+            // Меню повторяется, пока пользователь не войдёт или не отменит запуск.
+            while (true)
+            {
+                // Перед показом стартового auth-меню очищаем экран.
+                Console.Clear();
+                // Печатаем заголовок раздела авторизации.
+                PrintHeader("Авторизация vn-app");
+                Console.WriteLine("1 - Войти");
+                Console.WriteLine("2 - Зарегистрироваться");
+                Console.WriteLine("Esc - Выход");
+                Console.WriteLine();
+                Console.Write("Выберите действие: ");
+
+                // Читаем одно нажатие клавиши.
+                ConsoleKeyInfo key = Console.ReadKey();
+                Console.WriteLine();
+
+                // Если пользователь выбрал вход, запускаем форму входа.
+                if (key.KeyChar == '1')
+                {
+                    if (await LoginUserAsync(authService, sessionService))
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                // Если пользователь выбрал регистрацию, запускаем форму регистрации.
+                if (key.KeyChar == '2')
+                {
+                    await RegisterUserAsync(authService);
+                    continue;
+                }
+
+                // Esc завершает приложение до запуска CLI.
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    return false;
+                }
+
+                // Для неизвестной клавиши показываем короткое сообщение.
+                ShowMessage("Неизвестная команда.", false);
+            }
+        }
+
+        // Выполняет вход пользователя.
+        private static async Task<bool> LoginUserAsync(AuthService authService, AuthSessionService sessionService)
+        {
+            // Перед формой входа очищаем экран.
+            Console.Clear();
+            // Печатаем заголовок входа.
+            PrintHeader("Вход");
+            // Запрашиваем логин пользователя.
+            Console.Write("Введите логин: ");
+            string login = Console.ReadLine();
+            // Запрашиваем пароль пользователя.
+            Console.Write("Введите пароль: ");
+            string password = Console.ReadLine();
+
+            // Передаём введённые данные в сервис аутентификации.
+            AuthResult result = await authService.AuthenticateAsync(login, password, CancellationToken.None);
+            // Показываем итог операции.
+            ShowMessage(result.Message, result.IsSuccess);
+
+            // После успешного входа запоминаем пользователя и токен серверной сессии.
+            if (result.IsSuccess && result.UserId.HasValue)
+            {
+                sessionService.SignIn(result.UserId.Value, result.Login);
+                return true;
+            }
+
+            // При неудачном входе возвращаемся в меню авторизации.
+            return false;
+        }
+
+        // Выполняет регистрацию нового пользователя.
+        private static async Task RegisterUserAsync(AuthService authService)
+        {
+            // Перед формой регистрации очищаем экран.
+            Console.Clear();
+            // Печатаем заголовок регистрации.
+            PrintHeader("Регистрация");
+            // Запрашиваем логин.
+            Console.Write("Введите логин: ");
+            string login = Console.ReadLine();
+            // Запрашиваем пароль.
+            Console.Write("Введите пароль: ");
+            string password = Console.ReadLine();
+
+            // Регистрируем пользователя через API.
+            AuthResult result = await authService.RegisterAsync(login, password, CancellationToken.None);
+            // Показываем сообщение об успехе или ошибке.
+            ShowMessage(result.Message, result.IsSuccess);
+        }
+
+        // Запускает основную интерактивную CLI-сессию.
+        private static async Task RunCliAsync(ServiceProvider serviceProvider, CommandRegistry registry)
+        {
+            // Получаем текущую пользовательскую сессию.
+            AuthSessionService sessionService = serviceProvider.GetRequiredService<AuthSessionService>();
+
+            // Если пользователь вошёл, показываем его логин.
+            if (sessionService.IsAuthenticated)
+            {
+                Console.WriteLine("Текущий пользователь: " + sessionService.CurrentLogin);
+            }
+
+            // Печатаем краткую подсказку по работе с CLI.
             Console.WriteLine("Введите команду. Для справки: help");
+            // Печатаем подсказку по выходу из программы.
             Console.WriteLine("Для выхода: exit");
             Console.WriteLine();
 
-            // Основной цикл продолжается, пока пользователь явно не введёт exit или quit.
+            // Основной цикл чтения команд пользователя.
             while (true)
             {
-                // Печатаем приглашение ввода.
+                // Печатаем приглашение командной строки.
                 Console.Write("vn> ");
-                // Считываем строку пользователя.
+                // Читаем строку ввода.
                 string input = Console.ReadLine();
 
-                // Пустые строки просто игнорируем.
+                // Пустой ввод просто пропускаем.
                 if (string.IsNullOrWhiteSpace(input))
                     continue;
 
-                // Убираем пробелы по краям.
+                // Убираем лишние пробелы по краям.
                 input = input.Trim();
 
-                // Команды выхода обрабатываются отдельно до поиска в реестре.
+                // Команды выхода обрабатываем отдельно.
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase) ||
                     input.Equals("quit", StringComparison.OrdinalIgnoreCase))
                 {
@@ -73,14 +214,14 @@ namespace CursovoyProjectxDxD
                     break;
                 }
 
-                // Разбиваем строку на массив аргументов.
+                // Разбиваем строку на аргументы.
                 string[] commandArgs = SplitCommandLine(input);
-                // По массиву аргументов определяем ключ команды.
+                // По аргументам определяем ключ команды.
                 string commandKey = BuildCommandKey(commandArgs);
-
-                // Переменная под найденную команду.
+                // Подготавливаем переменную для найденной команды.
                 ICommand command;
-                // Пробуем найти обработчик команды в реестре.
+
+                // Если команда не найдена, выводим подсказку.
                 if (!registry.TryGet(commandKey, out command))
                 {
                     Console.WriteLine("Неизвестная команда.");
@@ -91,12 +232,11 @@ namespace CursovoyProjectxDxD
 
                 try
                 {
-                    // Создаём контекст текущего выполнения.
+                    // Формируем контекст текущего выполнения.
                     CommandContext context = new CommandContext(commandArgs, serviceProvider);
                     // Выполняем команду.
-                    CommandResult result = await command.ExecuteAsync(context);
-
-                    // Печатаем сообщение команды.
+                    CommandResult result = await command.ExecuteAsync(context, CancellationToken.None);
+                    // Печатаем сообщение результата команды.
                     Console.WriteLine(result.Message);
                     Console.WriteLine();
                 }
@@ -107,74 +247,85 @@ namespace CursovoyProjectxDxD
                     Console.WriteLine();
                 }
             }
-
-            return 0;
         }
 
-        // Показывает информацию о доступности обновления при старте приложения.
+        // Показывает информацию о доступности обновления при старте.
         private static async Task PrintStartupUpdateInfoAsync(ServiceProvider serviceProvider)
         {
             try
             {
-                // Получаем сервис работы с GitHub Releases.
+                // Получаем сервис чтения GitHub Releases.
                 GitHubReleaseService releaseService = serviceProvider.GetRequiredService<GitHubReleaseService>();
-                // Выполняем сетевую проверку релиза.
+                // Выполняем проверку новой версии.
                 AppUpdateInfo updateInfo = await releaseService.CheckForUpdateAsync();
 
-                // Если новая версия найдена, сообщаем об этом пользователю.
+                // Если обновление найдено, сообщаем новую версию.
                 if (updateInfo.IsAvailable)
                 {
                     Console.WriteLine("Доступно обновление до версии " + updateInfo.LatestVersion + ".");
                 }
                 else
                 {
-                    // Если новой версии нет, явно говорим, что всё актуально.
+                    // Иначе сообщаем, что версия уже актуальна.
                     Console.WriteLine("Обновление не требуется. Установлена актуальная версия.");
                 }
             }
             catch (Exception ex)
             {
-                // Ошибка проверки обновления не должна мешать запуску CLI.
+                // Ошибка проверки обновлений не должна ломать запуск CLI.
                 Console.WriteLine("Не удалось проверить обновления: " + ex.Message);
             }
         }
 
-        // Конфигурируем сервисы, доступные командам.
+        // Регистрирует сервисы приложения в DI-контейнере.
         private static ServiceProvider ConfigureServices()
         {
-            // Создаём коллекцию регистраций сервисов.
+            // Создаём коллекцию сервисов.
             ServiceCollection services = new ServiceCollection();
 
-            // Реестр команд живёт на протяжении всей сессии приложения.
+            // Регистрируем реестр команд.
             services.AddSingleton<CommandRegistry>();
-            // Один HttpClient переиспользуется всеми сетевыми запросами приложения.
+            // Регистрируем единый HttpClient.
             services.AddSingleton(new HttpClient());
-            // Сервис чтения релизов нужен командам update и стартовой проверке.
+            // Регистрируем сервис чтения релизов.
             services.AddSingleton<GitHubReleaseService>();
-            // Сервис запуска внешнего установщика нужен для update apply.
+            // Регистрируем сервис запуска установщика.
             services.AddSingleton<InstallerLauncherService>();
+            // Регистрируем фабрику соединений с PostgreSQL.
+            services.AddSingleton<DatabaseConnectionFactory>();
+            // Регистрируем сервис инициализации схемы БД.
+            // Регистрируем сервис авторизации через PostgreSQL.
+            services.AddSingleton<AuthService>();
+            // Регистрируем сервис хранения текущей сессии.
+            services.AddSingleton<AuthSessionService>();
+            // Регистрируем сервис работы с заметками через PostgreSQL.
+            services.AddSingleton<NoteService>();
 
-            // Собираем итоговый контейнер зависимостей.
+            // Собираем и возвращаем готовый контейнер.
             return services.BuildServiceProvider();
         }
 
-        // Заполняем реестр всеми командами приложения.
+        // Регистрирует команды приложения.
         private static void RegisterCommands(CommandRegistry registry)
         {
             // Команда справки.
             registry.Register(new HelpCommand(registry));
-            // Команда вывода версии.
+            // Команда версии.
             registry.Register(new VersionCommand());
-            // Команда проверки доступности обновления.
+            // Команда добавления заметки.
+            registry.Register(new NoteAddCommand());
+            // Команда удаления заметки.
+            registry.Register(new NoteDeleteCommand());
+            // Команда проверки обновлений.
             registry.Register(new UpdateCheckCommand());
-            // Команда запуска установщика обновления.
+            // Команда запуска обновления.
             registry.Register(new UpdateApplyCommand());
         }
 
-        // Нормализуем массив аргументов в ключ команды.
+        // Строит ключ команды по массиву аргументов.
         private static string BuildCommandKey(string[] args)
         {
-            // Пустой ввод безопасно сводим к help.
+            // Пустой ввод сводим к help.
             if (args == null || args.Length == 0)
                 return "help";
 
@@ -191,6 +342,18 @@ namespace CursovoyProjectxDxD
             // Обрабатываем известные двухсловные команды.
             if (args.Length >= 2)
             {
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("add", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt add";
+                }
+
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt del";
+                }
+
                 if (args[0].Equals("update", StringComparison.OrdinalIgnoreCase) &&
                     args[1].Equals("check", StringComparison.OrdinalIgnoreCase))
                 {
@@ -204,28 +367,28 @@ namespace CursovoyProjectxDxD
                 }
             }
 
-            // Для всего остального возвращаем строку как есть.
+            // Для остального возвращаем строку как есть.
             return string.Join(" ", args).Trim();
         }
 
-        // Разбираем строку команды на аргументы с поддержкой кавычек.
+        // Разбирает строку команды на аргументы с поддержкой кавычек.
         private static string[] SplitCommandLine(string commandLine)
         {
             // Пустая строка даёт пустой массив.
             if (string.IsNullOrWhiteSpace(commandLine))
                 return new string[0];
 
-            // Список готовых аргументов.
-            var result = new System.Collections.Generic.List<string>();
-            // Флаг, показывающий, находимся ли мы внутри кавычек.
+            // Создаём список итоговых аргументов.
+            List<string> result = new List<string>();
+            // Флаг показывает, находимся ли внутри кавычек.
             bool inQuotes = false;
             // Буфер текущего аргумента.
-            var current = new System.Text.StringBuilder();
+            StringBuilder current = new StringBuilder();
 
             // Посимвольно разбираем строку ввода.
             foreach (char ch in commandLine)
             {
-                // Кавычка переключает режим разбора, но не входит в аргумент.
+                // Кавычка переключает режим чтения текста в кавычках.
                 if (ch == '"')
                 {
                     inQuotes = !inQuotes;
@@ -237,20 +400,18 @@ namespace CursovoyProjectxDxD
                 {
                     if (current.Length > 0)
                     {
-                        // Сохраняем накопленный аргумент.
                         result.Add(current.ToString());
-                        // Очищаем буфер под следующий.
                         current.Clear();
                     }
                 }
                 else
                 {
-                    // Обычный символ добавляем в текущий аргумент.
+                    // Любой другой символ добавляем в текущий аргумент.
                     current.Append(ch);
                 }
             }
 
-            // Не забываем добавить последний аргумент после завершения цикла.
+            // Добавляем последний аргумент после завершения цикла.
             if (current.Length > 0)
             {
                 result.Add(current.ToString());
@@ -258,6 +419,30 @@ namespace CursovoyProjectxDxD
 
             // Возвращаем готовый массив аргументов.
             return result.ToArray();
+        }
+
+        // Печатает заголовок отдельного экрана авторизации.
+        private static void PrintHeader(string title)
+        {
+            // Печатаем текст заголовка.
+            Console.WriteLine(title);
+            // Печатаем визуальный разделитель.
+            Console.WriteLine(new string('-', 32));
+            Console.WriteLine();
+        }
+
+        // Показывает цветное сообщение пользователю.
+        private static void ShowMessage(string message, bool isSuccess)
+        {
+            // Подбираем цвет по результату операции.
+            Console.ForegroundColor = isSuccess ? ConsoleColor.Green : ConsoleColor.Red;
+            // Печатаем сообщение.
+            Console.WriteLine(message);
+            // Возвращаем стандартный цвет консоли.
+            Console.ResetColor();
+            Console.WriteLine();
+            // Даём пользователю время прочитать ответ.
+            System.Threading.Thread.Sleep(900);
         }
     }
 }
