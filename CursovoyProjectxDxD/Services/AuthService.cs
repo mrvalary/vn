@@ -291,7 +291,7 @@ namespace CursovoyProjectxDxD.Services
                 // Проверяем, что роль поддерживается приложением.
                 if (!IsKnownRole(roleName))
                 {
-                    return AuthResult.Failure("Неизвестная роль. Доступные роли: user, admin.");
+                    return AuthResult.Failure("Неизвестная роль. Доступные роли: user, admin, statistician.");
                 }
 
                 // Открываем соединение с PostgreSQL.
@@ -361,7 +361,8 @@ namespace CursovoyProjectxDxD.Services
         private static bool IsKnownRole(string roleName)
         {
             return roleName == UserRole.User ||
-                   roleName == UserRole.Admin;
+                   roleName == UserRole.Admin ||
+                   roleName == UserRole.Statistician;
         }
 
         // Проверяет логин и пароль перед созданием пользователя.

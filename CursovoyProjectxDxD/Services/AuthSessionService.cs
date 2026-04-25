@@ -5,6 +5,8 @@ namespace CursovoyProjectxDxD.Services
     // Хранит данные текущей локальной сессии пользователя.
     public sealed class AuthSessionService
     {
+        #region Current User
+
         // Пользователь считается авторизованным, если у него есть id и логин.
         public bool IsAuthenticated
         {
@@ -26,40 +28,54 @@ namespace CursovoyProjectxDxD.Services
             get { return UserRole.GetDisplayName(CurrentRoleName); }
         }
 
+        #endregion
+
+        #region Session State
+
         // Открывает сессию после успешного входа.
         public void SignIn(int userId, string login, string roleName)
         {
-            // Запоминаем id пользователя.
             CurrentUserId = userId;
-            // Запоминаем логин пользователя.
             CurrentLogin = login;
-            // Запоминаем роль пользователя.
             CurrentRoleName = string.IsNullOrWhiteSpace(roleName) ? UserRole.User : roleName;
         }
 
         // Полностью очищает данные текущей сессии.
         public void SignOut()
         {
-            // Убираем id пользователя.
             CurrentUserId = null;
-            // Убираем логин пользователя.
             CurrentLogin = null;
-            // Убираем роль пользователя.
             CurrentRoleName = null;
         }
+
+        #endregion
+
+        #region Role Checks
 
         // Проверяет, является ли текущий пользователь администратором.
         public bool IsAdmin()
         {
-            // Роль admin используется админскими командами.
             return CurrentRoleName == UserRole.Admin;
         }
 
-        // Проверяет, может ли пользователь просматривать логи безопасности.
+        // Проверяет, является ли текущий пользователь статистом.
+        public bool IsStatistician()
+        {
+            return CurrentRoleName == UserRole.Statistician;
+        }
+
+        // Мониторинг доступен администратору и статисту.
+        public bool CanManageMonitoring()
+        {
+            return IsAdmin() || IsStatistician();
+        }
+
+        // Логи безопасности доступны только администратору.
         public bool CanViewSecurityLogs()
         {
-            // Логи безопасности доступны админу.
-            return CurrentRoleName == UserRole.Admin;
+            return IsAdmin();
         }
+
+        #endregion
     }
 }

@@ -353,6 +353,8 @@ namespace CursovoyProjectxDxD
             services.AddSingleton<NoteService>();
             // Регистрируем сервис журнала безопасности.
             services.AddSingleton<SecurityLogService>();
+            // Регистрируем сервис просмотра метрик Watcher.
+            services.AddSingleton<MonitoringService>();
             // Собираем и возвращаем готовый контейнер.
             return services.BuildServiceProvider();
         }
@@ -382,6 +384,8 @@ namespace CursovoyProjectxDxD
             registry.Register(new AdminNoteCommand());
             // Команда просмотра журнала безопасности.
             registry.Register(new SecurityLogsCommand());
+            // Команды просмотра и управления устройствами Watcher.
+            registry.Register(new WatchCommand());
             // Команда проверки обновлений.
             registry.Register(new UpdateCheckCommand());
             // Команда запуска обновления.
@@ -460,6 +464,11 @@ namespace CursovoyProjectxDxD
                     args[1].Equals("logs", StringComparison.OrdinalIgnoreCase))
                 {
                     return "sec logs";
+                }
+
+                if (args[0].Equals("watch", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "watch";
                 }
 
                 if (args[0].Equals("update", StringComparison.OrdinalIgnoreCase) &&

@@ -48,6 +48,12 @@ namespace CursovoyProjectxDxD.Commands
                     continue;
                 }
 
+                // Команды watch видит админ или статист.
+                if (command.Name.StartsWith("watch") && !sessionService.CanManageMonitoring())
+                {
+                    continue;
+                }
+
                 // Команды security видит только админ.
                 if (command.Name.StartsWith("sec ") && !sessionService.CanViewSecurityLogs())
                 {

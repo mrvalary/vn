@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS roles (
 INSERT INTO roles (name, display_name)
 VALUES
     ('user', 'Пользователь'),
-    ('admin', 'Админ')
+    ('admin', 'Админ'),
+    ('statistician', 'Статист')
 ON CONFLICT (name) DO UPDATE
 SET display_name = EXCLUDED.display_name;
 
@@ -62,14 +63,6 @@ BEGIN
     END IF;
 END $$;
 
--- Статистика удалена из приложения: старых статистов переводим в обычных пользователей.
-UPDATE users
-SET role_id = (SELECT id FROM roles WHERE name = 'user')
-WHERE role_id = (SELECT id FROM roles WHERE name = 'statistician');
-
-DELETE FROM roles
-WHERE name = 'statistician';
-
 -- Таблица заметок пользователя.
 CREATE TABLE IF NOT EXISTS notes (
     id SERIAL PRIMARY KEY,
@@ -101,9 +94,49 @@ CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created
 -- Индекс ускоряет фильтрацию по типу события в будущих командах.
 CREATE INDEX IF NOT EXISTS idx_security_logs_event_type ON security_logs(event_type);
 
--- Статистика удалена из приложения, поэтому старые таблицы мониторинга больше не нужны.
-DROP TABLE IF EXISTS system_metrics;
-DROP TABLE IF EXISTS monitored_devices;
+-- Устройства, с которых Watcher отправляет метрики.
+CREATE TABLE IF NOT EXISTS monitored_devices (
+    id SERIAL PRIMARY KEY,
+    device_key VARCHAR(100) NULL,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(255) NULL,
+    description TEXT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_seen_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE monitored_devices
+ADD COLUMN IF NOT EXISTS device_key VARCHAR(100);
+
+ALTER TABLE monitored_devices
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE monitored_devices
+ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP NULL;
+
+UPDATE monitored_devices
+SET device_key = name
+WHERE device_key IS NULL OR device_key = '';
+
+ALTER TABLE monitored_devices
+ALTER COLUMN device_key SET NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_monitored_devices_device_key
+ON monitored_devices(device_key);
+
+-- История снимков нагрузки CPU/RAM/HDD, которую присылают Watcher-агенты.
+CREATE TABLE IF NOT EXISTS system_metrics (
+    id SERIAL PRIMARY KEY,
+    device_id INT NOT NULL REFERENCES monitored_devices(id) ON DELETE CASCADE,
+    cpu_percent NUMERIC(5,2) NOT NULL,
+    ram_percent NUMERIC(5,2) NOT NULL,
+    hdd_percent NUMERIC(5,2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_metrics_device_id_created_at
+ON system_metrics(device_id, created_at DESC);
 
 -- Database roles used by the application.
 -- vn_app_auth is the startup account from App.config. It is not a PostgreSQL superuser.
@@ -120,11 +153,21 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vn_admin_role') THEN
         CREATE ROLE vn_admin_role LOGIN PASSWORD 'vn_admin_password';
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vn_statistician_role') THEN
+        CREATE ROLE vn_statistician_role LOGIN PASSWORD 'vn_statistician_password';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vn_watcher') THEN
+        CREATE ROLE vn_watcher LOGIN PASSWORD 'vn_watcher_password';
+    END IF;
 END $$;
 
 ALTER ROLE vn_app_auth LOGIN PASSWORD 'vn_app_auth_password';
 ALTER ROLE vn_user_role LOGIN PASSWORD 'vn_user_password';
 ALTER ROLE vn_admin_role LOGIN PASSWORD 'vn_admin_password';
+ALTER ROLE vn_statistician_role LOGIN PASSWORD 'vn_statistician_password';
+ALTER ROLE vn_watcher LOGIN PASSWORD 'vn_watcher_password';
 
 ALTER TABLE roles
 ADD COLUMN IF NOT EXISTS connection_string TEXT;
@@ -137,6 +180,10 @@ UPDATE roles
 SET connection_string = 'Host=192.168.0.102;Port=5432;Username=vn_admin_role;Password=vn_admin_password;Database=vn'
 WHERE name = 'admin';
 
+UPDATE roles
+SET connection_string = 'Host=192.168.0.102;Port=5432;Username=vn_statistician_role;Password=vn_statistician_password;Database=vn'
+WHERE name = 'statistician';
+
 CREATE OR REPLACE FUNCTION get_role_connection_string(p_role_name VARCHAR)
 RETURNS TEXT
 LANGUAGE sql
@@ -148,13 +195,60 @@ AS $$
     WHERE name = p_role_name;
 $$;
 
+CREATE OR REPLACE FUNCTION save_device_metric(
+    p_device_key VARCHAR,
+    p_device_name VARCHAR,
+    p_cpu_percent NUMERIC,
+    p_ram_percent NUMERIC,
+    p_hdd_percent NUMERIC
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_device_id INT;
+BEGIN
+    IF p_device_key IS NULL OR btrim(p_device_key) = '' THEN
+        RAISE EXCEPTION 'device_key is required';
+    END IF;
+
+    INSERT INTO monitored_devices (device_key, name, last_seen_at, is_active)
+    VALUES (
+        btrim(p_device_key),
+        COALESCE(NULLIF(btrim(p_device_name), ''), btrim(p_device_key)),
+        NOW(),
+        TRUE
+    )
+    ON CONFLICT (device_key) DO UPDATE
+    SET name = COALESCE(NULLIF(EXCLUDED.name, ''), monitored_devices.name),
+        last_seen_at = NOW()
+    RETURNING id INTO v_device_id;
+
+    INSERT INTO system_metrics (device_id, cpu_percent, ram_percent, hdd_percent)
+    VALUES (
+        v_device_id,
+        LEAST(GREATEST(COALESCE(p_cpu_percent, 0), 0), 100),
+        LEAST(GREATEST(COALESCE(p_ram_percent, 0), 0), 100),
+        LEAST(GREATEST(COALESCE(p_hdd_percent, 0), 0), 100)
+    );
+END;
+$$;
+
 REVOKE ALL ON FUNCTION get_role_connection_string(VARCHAR) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_device_metric(VARCHAR, VARCHAR, NUMERIC, NUMERIC, NUMERIC) FROM PUBLIC;
 
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM vn_app_auth;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM vn_app_auth;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM vn_statistician_role;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM vn_statistician_role;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM vn_watcher;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM vn_watcher;
 
-GRANT USAGE ON SCHEMA public TO vn_app_auth, vn_user_role, vn_admin_role;
-GRANT EXECUTE ON FUNCTION get_role_connection_string(VARCHAR) TO vn_app_auth, vn_user_role, vn_admin_role;
+GRANT USAGE ON SCHEMA public TO vn_app_auth, vn_user_role, vn_admin_role, vn_statistician_role, vn_watcher;
+GRANT EXECUTE ON FUNCTION get_role_connection_string(VARCHAR) TO vn_app_auth, vn_user_role, vn_admin_role, vn_statistician_role;
+GRANT EXECUTE ON FUNCTION save_device_metric(VARCHAR, VARCHAR, NUMERIC, NUMERIC, NUMERIC) TO vn_watcher;
 
 GRANT SELECT ON users, roles TO vn_app_auth;
 GRANT INSERT ON users, security_logs TO vn_app_auth;
@@ -165,16 +259,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON notes TO vn_user_role;
 GRANT INSERT ON security_logs TO vn_user_role;
 GRANT USAGE, SELECT ON SEQUENCE notes_id_seq, security_logs_id_seq TO vn_user_role;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON users, roles, notes, security_logs TO vn_admin_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON users, roles, notes, security_logs, monitored_devices, system_metrics TO vn_admin_role;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO vn_admin_role;
 
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vn_statistician_role') THEN
-        REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM vn_statistician_role;
-        REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM vn_statistician_role;
-        REVOKE EXECUTE ON FUNCTION get_role_connection_string(VARCHAR) FROM vn_statistician_role;
-        REVOKE USAGE ON SCHEMA public FROM vn_statistician_role;
-        DROP ROLE vn_statistician_role;
-    END IF;
-END $$;
+GRANT SELECT ON monitored_devices, system_metrics TO vn_statistician_role;
+GRANT INSERT, UPDATE, DELETE ON monitored_devices TO vn_statistician_role;
+GRANT INSERT ON security_logs TO vn_statistician_role;
+GRANT USAGE, SELECT ON SEQUENCE monitored_devices_id_seq, security_logs_id_seq TO vn_statistician_role;
