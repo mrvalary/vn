@@ -46,6 +46,11 @@ namespace CursovoyProjectxDxD
             // Регистрируем все команды CLI.
             RegisterCommands(registry);
 
+            if (!await EnsureDatabaseConnectionAsync(serviceProvider))
+            {
+                return 1;
+            }
+
             // Сначала просим пользователя пройти авторизацию через API.
             bool isAuthorized = await RunAuthorizationMenuAsync(serviceProvider);
 
@@ -67,6 +72,23 @@ namespace CursovoyProjectxDxD
             // После авторизации запускаем основную CLI-сессию.
             await RunCliAsync(serviceProvider, registry);
             return 0;
+        }
+
+        private static async Task<bool> EnsureDatabaseConnectionAsync(ServiceProvider serviceProvider)
+        {
+            try
+            {
+                DatabaseConnectionFactory connectionFactory = serviceProvider.GetRequiredService<DatabaseConnectionFactory>();
+                using (Npgsql.NpgsqlConnection connection = await connectionFactory.CreateOpenBootstrapConnectionAsync(CancellationToken.None))
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Не удалось подключиться к базе данных: " + ex.Message);
+                return false;
+            }
         }
 
         // Показывает стартовое меню входа и регистрации.
@@ -331,9 +353,6 @@ namespace CursovoyProjectxDxD
             services.AddSingleton<NoteService>();
             // Регистрируем сервис журнала безопасности.
             services.AddSingleton<SecurityLogService>();
-            // Регистрируем сервис статистики нагрузки CPU/RAM/HDD.
-            services.AddSingleton<SystemMonitoringService>();
-
             // Собираем и возвращаем готовый контейнер.
             return services.BuildServiceProvider();
         }
@@ -363,8 +382,6 @@ namespace CursovoyProjectxDxD
             registry.Register(new AdminNoteCommand());
             // Команда просмотра журнала безопасности.
             registry.Register(new SecurityLogsCommand());
-            // Команда просмотра и сбора статистики нагрузки устройств.
-            registry.Register(new StatCommand());
             // Команда проверки обновлений.
             registry.Register(new UpdateCheckCommand());
             // Команда запуска обновления.
@@ -443,11 +460,6 @@ namespace CursovoyProjectxDxD
                     args[1].Equals("logs", StringComparison.OrdinalIgnoreCase))
                 {
                     return "sec logs";
-                }
-
-                if (args[0].Equals("stat", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "stat";
                 }
 
                 if (args[0].Equals("update", StringComparison.OrdinalIgnoreCase) &&

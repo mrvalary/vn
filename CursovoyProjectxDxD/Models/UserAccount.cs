@@ -11,7 +11,7 @@ namespace CursovoyProjectxDxD.Models
         // Логин пользователя.
         public string Login { get; set; }
 
-        // Системное название роли: user, admin или statistician.
+        // Системное название роли: user или admin.
         public string RoleName { get; set; }
 
         // Показывает, заблокирована ли учётная запись.

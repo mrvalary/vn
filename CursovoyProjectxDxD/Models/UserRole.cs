@@ -9,9 +9,6 @@ namespace CursovoyProjectxDxD.Models
         // Администратор: управление пользователями, заметками и просмотр логов безопасности.
         public const string Admin = "admin";
 
-        // Статист: просмотр статистики и логов безопасности без админского изменения данных.
-        public const string Statistician = "statistician";
-
         // Возвращает русское название роли для вывода в консоль.
         public static string GetDisplayName(string roleName)
         {
@@ -19,12 +16,6 @@ namespace CursovoyProjectxDxD.Models
             if (roleName == Admin)
             {
                 return "Админ";
-            }
-
-            // Статиста показываем отдельной ролью.
-            if (roleName == Statistician)
-            {
-                return "Статист";
             }
 
             // Любая неизвестная или обычная роль отображается как пользователь.

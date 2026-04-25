@@ -55,18 +55,11 @@ namespace CursovoyProjectxDxD.Services
             return CurrentRoleName == UserRole.Admin;
         }
 
-        // Проверяет, может ли пользователь просматривать будущую статистику.
-        public bool CanViewStatistics()
-        {
-            // Статист и админ смогут видеть будущие вотчи/статистику.
-            return CurrentRoleName == UserRole.Statistician || CurrentRoleName == UserRole.Admin;
-        }
-
         // Проверяет, может ли пользователь просматривать логи безопасности.
         public bool CanViewSecurityLogs()
         {
-            // Логи безопасности доступны админу и статисту.
-            return CurrentRoleName == UserRole.Admin || CurrentRoleName == UserRole.Statistician;
+            // Логи безопасности доступны админу.
+            return CurrentRoleName == UserRole.Admin;
         }
     }
 }

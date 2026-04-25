@@ -15,6 +15,9 @@ namespace CursovoyProjectxDxD.Services
         // Минимальная длина пароля для обычной регистрации и админского создания пользователя.
         private const int MinPasswordLength = 6;
 
+        private const string GetRoleConnectionStringSql =
+            "SELECT get_role_connection_string(@roleName);";
+
         // SQL поиска пользователя по логину вместе с ролью и флагом блокировки.
         private const string FindUserByLoginSql =
             "SELECT u.id, u.login, u.password_hash, r.name, u.is_blocked " +
@@ -65,6 +68,8 @@ namespace CursovoyProjectxDxD.Services
         {
             try
             {
+                _connectionFactory.ClearRuntimeConnectionString();
+
                 // Нормализуем логин и пароль перед проверками.
                 login = Normalize(login);
                 password = Normalize(password);
@@ -81,10 +86,10 @@ namespace CursovoyProjectxDxD.Services
                     return AuthResult.Failure("Пароль не может быть пустым.");
                 }
 
-                // Открываем соединение с PostgreSQL.
+                // Открываем обычное стартовое соединение с PostgreSQL.
                 using (NpgsqlConnection connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken))
                 {
-                    // Ищем пользователя по логину.
+                    // Ищем пользователя по логину так же, как раньше.
                     using (NpgsqlCommand command = new NpgsqlCommand(FindUserByLoginSql, connection))
                     {
                         command.Parameters.AddWithValue("login", login);
@@ -118,23 +123,52 @@ namespace CursovoyProjectxDxD.Services
                                 return AuthResult.Failure("Неверный пароль.");
                             }
 
+                            string roleConnectionString = await GetRoleConnectionStringAsync(roleName, cancellationToken);
+                            _connectionFactory.SetRuntimeConnectionString(roleConnectionString);
+
                             // Успешный вход возвращает id, логин и роль для AuthSessionService.
-                            return AuthResult.Success("Аутентификация успешна.", userId, databaseLogin, roleName);
+                            return AuthResult.Success("Аутентификация успешна.", userId, databaseLogin, roleName, roleConnectionString);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                _connectionFactory.ClearRuntimeConnectionString();
                 // Ошибку подключения или SQL возвращаем пользователю понятным сообщением.
                 return AuthResult.Failure("Ошибка при аутентификации: " + ex.Message);
+            }
+        }
+
+        private async Task<string> GetRoleConnectionStringAsync(string roleName, CancellationToken cancellationToken)
+        {
+            using (NpgsqlConnection connection = await _connectionFactory.CreateOpenBootstrapConnectionAsync(cancellationToken))
+            {
+                using (NpgsqlCommand command = new NpgsqlCommand(GetRoleConnectionStringSql, connection))
+                {
+                    command.Parameters.AddWithValue("roleName", roleName);
+                    object result = await command.ExecuteScalarAsync(cancellationToken);
+                    string connectionString = result == null || result == DBNull.Value ? null : result.ToString();
+
+                    if (string.IsNullOrWhiteSpace(connectionString))
+                    {
+                        throw new InvalidOperationException("Для роли " + roleName + " не настроена строка подключения.");
+                    }
+
+                    using (NpgsqlConnection roleConnection = new NpgsqlConnection(connectionString))
+                    {
+                        await roleConnection.OpenAsync(cancellationToken);
+                    }
+
+                    return connectionString;
+                }
             }
         }
 
         // Создаёт пользователя от имени администратора с выбранной ролью.
         public async Task<AuthResult> CreateUserAsync(string login, string password, string roleName, CancellationToken cancellationToken)
         {
-            // Админ может создать user, admin или statistician.
+            // Админ может создать user или admin.
             return await CreateUserInternalAsync(login, password, roleName, null, cancellationToken);
         }
 
@@ -257,7 +291,7 @@ namespace CursovoyProjectxDxD.Services
                 // Проверяем, что роль поддерживается приложением.
                 if (!IsKnownRole(roleName))
                 {
-                    return AuthResult.Failure("Неизвестная роль. Доступные роли: user, admin, statistician.");
+                    return AuthResult.Failure("Неизвестная роль. Доступные роли: user, admin.");
                 }
 
                 // Открываем соединение с PostgreSQL.
@@ -327,8 +361,7 @@ namespace CursovoyProjectxDxD.Services
         private static bool IsKnownRole(string roleName)
         {
             return roleName == UserRole.User ||
-                   roleName == UserRole.Admin ||
-                   roleName == UserRole.Statistician;
+                   roleName == UserRole.Admin;
         }
 
         // Проверяет логин и пароль перед созданием пользователя.

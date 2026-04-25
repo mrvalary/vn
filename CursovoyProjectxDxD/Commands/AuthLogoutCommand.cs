@@ -35,6 +35,7 @@ namespace CursovoyProjectxDxD.Commands
 
             // Полностью очищаем текущую локальную сессию.
             sessionService.SignOut();
+            context.GetRequiredService<DatabaseConnectionFactory>().ClearRuntimeConnectionString();
 
             // После этой команды Program вернёт пользователя в меню авторизации.
             return CommandResult.Ok("Пользователь " + login + " вышел из системы.");

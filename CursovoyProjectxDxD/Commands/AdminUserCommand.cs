@@ -69,7 +69,7 @@ namespace CursovoyProjectxDxD.Commands
             // Проверяем синтаксис: роль можно не указывать, тогда будет user.
             if (context.Args.Length < 5 || context.Args.Length > 6)
             {
-                return CommandResult.Fail("Использование: admin user create <login> <password> [user|admin|statistician]");
+                return CommandResult.Fail("Использование: admin user create <login> <password> [user|admin]");
             }
 
             // Получаем AuthService.
@@ -255,7 +255,7 @@ namespace CursovoyProjectxDxD.Commands
         private static string GetUsage()
         {
             return "Использование:\n" +
-                   "admin user create <login> <password> [user|admin|statistician]\n" +
+                   "admin user create <login> <password> [user|admin]\n" +
                    "admin user delete <login>\n" +
                    "admin user block <login>\n" +
                    "admin user unblock <login>\n" +

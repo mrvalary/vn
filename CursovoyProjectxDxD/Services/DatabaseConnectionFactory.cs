@@ -6,37 +6,71 @@ using Npgsql;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Фабрика создаёт соединения с PostgreSQL по строке подключения из App.config.
     public sealed class DatabaseConnectionFactory
     {
-        // Имя connection string в App.config.
         private const string ConnectionStringName = "NotesDb";
 
-        // Создаёт и открывает соединение с базой данных.
+        private readonly object _syncRoot = new object();
+        private string _runtimeConnectionString;
+
         public async Task<NpgsqlConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken)
         {
-            // Создаём объект подключения по строке из конфигурации.
-            NpgsqlConnection connection = new NpgsqlConnection(GetConnectionString());
-            // Открываем физическое соединение с PostgreSQL.
+            NpgsqlConnection connection = new NpgsqlConnection(GetRuntimeConnectionString());
             await connection.OpenAsync(cancellationToken);
-            // Возвращаем уже открытое соединение вызывающей стороне.
             return connection;
         }
 
-        // Считывает строку подключения из App.config.
-        private string GetConnectionString()
+        public async Task<NpgsqlConnection> CreateOpenBootstrapConnectionAsync(CancellationToken cancellationToken)
         {
-            // Пытаемся найти named connection string в конфигурации приложения.
+            NpgsqlConnection connection = new NpgsqlConnection(GetConfiguredConnectionString());
+            await connection.OpenAsync(cancellationToken);
+            return connection;
+        }
+
+        public void SetRuntimeConnectionString(string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("Stored procedure returned an empty role connection string.");
+            }
+
+            lock (_syncRoot)
+            {
+                _runtimeConnectionString = connectionString.Trim();
+            }
+        }
+
+        public void ClearRuntimeConnectionString()
+        {
+            lock (_syncRoot)
+            {
+                _runtimeConnectionString = null;
+            }
+        }
+
+        private string GetRuntimeConnectionString()
+        {
+            lock (_syncRoot)
+            {
+                if (!string.IsNullOrWhiteSpace(_runtimeConnectionString))
+                {
+                    return _runtimeConnectionString;
+                }
+            }
+
+            return GetConfiguredConnectionString();
+        }
+
+        private string GetConfiguredConnectionString()
+        {
             ConnectionStringSettings settings = ConfigurationManager.ConnectionStrings[ConnectionStringName];
 
-            // Если строка подключения не задана, даём понятную ошибку.
             if (settings == null || string.IsNullOrWhiteSpace(settings.ConnectionString))
             {
                 throw new InvalidOperationException(
-                    "Не настроено подключение к PostgreSQL. Заполните connection string '" + ConnectionStringName + "' в App.config.");
+                    "PostgreSQL connection string '" + ConnectionStringName + "' is not configured in App.config.");
             }
 
-            // Возвращаем готовую строку подключения.
             return settings.ConnectionString;
         }
     }

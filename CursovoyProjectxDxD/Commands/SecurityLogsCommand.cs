@@ -23,10 +23,10 @@ namespace CursovoyProjectxDxD.Commands
             // Получаем сессию для проверки роли.
             AuthSessionService sessionService = context.GetRequiredService<AuthSessionService>();
 
-            // Команда доступна только админу и статисту.
+            // Команда доступна только админу.
             if (!sessionService.CanViewSecurityLogs())
             {
-                return CommandResult.Fail("Логи безопасности доступны только админу и статисту.");
+                return CommandResult.Fail("Логи безопасности доступны только админу.");
             }
 
             // По умолчанию показываем последние 20 записей.
