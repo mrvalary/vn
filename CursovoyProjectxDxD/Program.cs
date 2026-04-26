@@ -12,10 +12,16 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD
 {
-    // Главный класс консольного приложения.
+    /// <summary>
+    /// Главный класс консольного приложения.
+    /// </summary>
     internal class Program
     {
-        // Синхронная точка входа нужна для .NET Framework.
+        /// <summary>
+        /// Синхронная точка входа приложения для .NET Framework.
+        /// </summary>
+        /// <param name="args">Аргументы командной строки.</param>
+        /// <returns>Код завершения приложения.</returns>
         private static int Main(string[] args)
         {
             try
@@ -31,7 +37,11 @@ namespace CursovoyProjectxDxD
             }
         }
 
-        // Основной сценарий запуска приложения.
+        /// <summary>
+        /// Выполняет основной сценарий запуска приложения.
+        /// </summary>
+        /// <param name="args">Аргументы командной строки.</param>
+        /// <returns>Код завершения приложения.</returns>
         private static async Task<int> MainAsync(string[] args)
         {
             // Задаём читаемое название окна консоли.
@@ -74,6 +84,11 @@ namespace CursovoyProjectxDxD
             return 0;
         }
 
+        /// <summary>
+        /// Проверяет, что приложение может подключиться к базе до показа формы входа.
+        /// </summary>
+        /// <param name="serviceProvider">Контейнер сервисов приложения.</param>
+        /// <returns>true, если подключение к базе успешно.</returns>
         private static async Task<bool> EnsureDatabaseConnectionAsync(ServiceProvider serviceProvider)
         {
             try
@@ -91,7 +106,11 @@ namespace CursovoyProjectxDxD
             }
         }
 
-        // Показывает стартовое меню входа и регистрации.
+        /// <summary>
+        /// Показывает стартовое меню входа и регистрации.
+        /// </summary>
+        /// <param name="serviceProvider">Контейнер сервисов приложения.</param>
+        /// <returns>true, если пользователь успешно авторизовался.</returns>
         private static async Task<bool> RunAuthorizationMenuAsync(ServiceProvider serviceProvider)
         {
             // Получаем сервис проверки логина и пароля.
@@ -147,7 +166,13 @@ namespace CursovoyProjectxDxD
             }
         }
 
-        // Выполняет вход пользователя.
+        /// <summary>
+        /// Выполняет вход пользователя.
+        /// </summary>
+        /// <param name="authService">Сервис проверки логина и пароля.</param>
+        /// <param name="sessionService">Сервис текущей пользовательской сессии.</param>
+        /// <param name="securityLogService">Сервис журнала безопасности.</param>
+        /// <returns>true, если вход выполнен успешно.</returns>
         private static async Task<bool> LoginUserAsync(AuthService authService, AuthSessionService sessionService, SecurityLogService securityLogService)
         {
             // Перед формой входа очищаем экран.
@@ -181,7 +206,12 @@ namespace CursovoyProjectxDxD
             return false;
         }
 
-        // Выполняет регистрацию нового пользователя.
+        /// <summary>
+        /// Выполняет регистрацию нового пользователя.
+        /// </summary>
+        /// <param name="authService">Сервис регистрации пользователя.</param>
+        /// <param name="securityLogService">Сервис журнала безопасности.</param>
+        /// <returns>Задача регистрации пользователя.</returns>
         private static async Task RegisterUserAsync(AuthService authService, SecurityLogService securityLogService)
         {
             // Перед формой регистрации очищаем экран.
@@ -203,7 +233,12 @@ namespace CursovoyProjectxDxD
             ShowMessage(result.Message, result.IsSuccess);
         }
 
-        // Запускает основную интерактивную CLI-сессию.
+        /// <summary>
+        /// Запускает основную интерактивную CLI-сессию.
+        /// </summary>
+        /// <param name="serviceProvider">Контейнер сервисов приложения.</param>
+        /// <param name="registry">Реестр доступных команд.</param>
+        /// <returns>Задача выполнения CLI-сессии.</returns>
         private static async Task RunCliAsync(ServiceProvider serviceProvider, CommandRegistry registry)
         {
             // Получаем текущую пользовательскую сессию.
@@ -300,7 +335,11 @@ namespace CursovoyProjectxDxD
             }
         }
 
-        // Показывает информацию о доступности обновления при старте.
+        /// <summary>
+        /// Показывает информацию о доступности обновления при старте.
+        /// </summary>
+        /// <param name="serviceProvider">Контейнер сервисов приложения.</param>
+        /// <returns>Задача проверки обновления.</returns>
         private static async Task PrintStartupUpdateInfoAsync(ServiceProvider serviceProvider)
         {
             try
@@ -328,7 +367,10 @@ namespace CursovoyProjectxDxD
             }
         }
 
-        // Регистрирует сервисы приложения в DI-контейнере.
+        /// <summary>
+        /// Регистрирует сервисы приложения в DI-контейнере.
+        /// </summary>
+        /// <returns>Готовый контейнер сервисов.</returns>
         private static ServiceProvider ConfigureServices()
         {
             // Создаём коллекцию сервисов.
@@ -338,6 +380,8 @@ namespace CursovoyProjectxDxD
             services.AddSingleton<CommandRegistry>();
             // Регистрируем единый HttpClient.
             services.AddSingleton(new HttpClient());
+            // Регистрируем YAML-настройки без секретов и строк подключения.
+            services.AddSingleton(YamlAppSettings.Load());
             // Регистрируем сервис чтения релизов.
             services.AddSingleton<GitHubReleaseService>();
             // Регистрируем сервис запуска установщика.
@@ -359,7 +403,10 @@ namespace CursovoyProjectxDxD
             return services.BuildServiceProvider();
         }
 
-        // Регистрирует команды приложения.
+        /// <summary>
+        /// Регистрирует команды приложения.
+        /// </summary>
+        /// <param name="registry">Реестр команд приложения.</param>
         private static void RegisterCommands(CommandRegistry registry)
         {
             // Команда справки.
@@ -392,7 +439,11 @@ namespace CursovoyProjectxDxD
             registry.Register(new UpdateApplyCommand());
         }
 
-        // Строит ключ команды по массиву аргументов.
+        /// <summary>
+        /// Строит ключ команды по массиву аргументов.
+        /// </summary>
+        /// <param name="args">Аргументы команды.</param>
+        /// <returns>Ключ команды для поиска в реестре.</returns>
         private static string BuildCommandKey(string[] args)
         {
             // Пустой ввод сводим к help.
@@ -488,7 +539,11 @@ namespace CursovoyProjectxDxD
             return string.Join(" ", args).Trim();
         }
 
-        // Разбирает строку команды на аргументы с поддержкой кавычек.
+        /// <summary>
+        /// Разбирает строку команды на аргументы с поддержкой кавычек.
+        /// </summary>
+        /// <param name="commandLine">Строка команды.</param>
+        /// <returns>Массив аргументов команды.</returns>
         private static string[] SplitCommandLine(string commandLine)
         {
             // Пустая строка даёт пустой массив.
@@ -538,7 +593,10 @@ namespace CursovoyProjectxDxD
             return result.ToArray();
         }
 
-        // Печатает заголовок отдельного экрана авторизации.
+        /// <summary>
+        /// Печатает заголовок отдельного экрана авторизации.
+        /// </summary>
+        /// <param name="title">Текст заголовка.</param>
         private static void PrintHeader(string title)
         {
             // Печатаем текст заголовка.
@@ -548,7 +606,11 @@ namespace CursovoyProjectxDxD
             Console.WriteLine();
         }
 
-        // Показывает цветное сообщение пользователю.
+        /// <summary>
+        /// Показывает цветное сообщение пользователю.
+        /// </summary>
+        /// <param name="message">Текст сообщения.</param>
+        /// <param name="isSuccess">Признак успешного результата.</param>
         private static void ShowMessage(string message, bool isSuccess)
         {
             // Подбираем цвет по результату операции.

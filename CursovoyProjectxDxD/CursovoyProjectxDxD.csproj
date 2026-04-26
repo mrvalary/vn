@@ -125,10 +125,14 @@
     <Compile Include="Services\MonitoringService.cs" />
     <Compile Include="Services\NoteService.cs" />
     <Compile Include="Services\SecurityLogService.cs" />
+    <Compile Include="Services\YamlAppSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="vn.yml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VnInstaller\VnInstaller.csproj">
@@ -153,6 +157,7 @@ copy /Y "$(SolutionDir)VnInstaller\bin\$(Configuration)\vn-installer.pdb" "$(Tar
 if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe" "$(TargetDir)vn-watcher.exe"
 if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe.config" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe.config" "$(TargetDir)vn-watcher.exe.config"
 if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.pdb" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.pdb" "$(TargetDir)vn-watcher.pdb"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\watcher.yml" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\watcher.yml" "$(TargetDir)watcher.yml"
 if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\System.ValueTuple.dll" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\System.ValueTuple.dll" "$(TargetDir)System.ValueTuple.dll"</PostBuildEvent>
   </PropertyGroup>
 </Project>

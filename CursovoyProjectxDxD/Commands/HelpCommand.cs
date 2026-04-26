@@ -6,24 +6,42 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда выводит подробную карту CLI по доступным пользователю разделам.
+    /// <summary>
+    /// Команда выводит подробную карту CLI по доступным пользователю разделам.
+    /// </summary>
     public sealed class HelpCommand : ICommand
     {
         #region Metadata
 
+        /// <summary>
+        /// Создает команду справки.
+        /// </summary>
+        /// <param name="registry">Реестр команд, сохраненный для совместимости старого конструктора.</param>
         public HelpCommand(CommandRegistry registry)
         {
             // Реестр приходит из старой точки подключения команды и оставлен для совместимости конструктора.
         }
 
+        /// <summary>
+        /// Имя команды в консоли.
+        /// </summary>
         public string Name => "help";
 
+        /// <summary>
+        /// Краткое описание команды для реестра команд.
+        /// </summary>
         public string Description => "Вывод карты всех доступных команд";
 
         #endregion
 
         #region Execute
 
+        /// <summary>
+        /// Формирует справку с учетом прав текущего пользователя.
+        /// </summary>
+        /// <param name="context">Контекст выполнения команды.</param>
+        /// <param name="cancellationToken">Токен отмены операции.</param>
+        /// <returns>Результат команды со строкой справки.</returns>
         public Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             AuthSessionService sessionService = context.GetRequiredService<AuthSessionService>();
@@ -58,6 +76,10 @@ namespace CursovoyProjectxDxD.Commands
 
         #region Help Blocks
 
+        /// <summary>
+        /// Добавляет общие команды клиента.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendCommonCommands(StringBuilder builder)
         {
             builder.AppendLine("Основные:");
@@ -68,6 +90,10 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine();
         }
 
+        /// <summary>
+        /// Добавляет команды работы с заметками.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendNoteCommands(StringBuilder builder)
         {
             builder.AppendLine("Заметки:");
@@ -79,6 +105,10 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine();
         }
 
+        /// <summary>
+        /// Добавляет команды мониторинга устройств.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendWatchCommands(StringBuilder builder)
         {
             builder.AppendLine("Мониторинг:");
@@ -89,6 +119,10 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine();
         }
 
+        /// <summary>
+        /// Добавляет команды обновления приложения.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendUpdateCommands(StringBuilder builder)
         {
             builder.AppendLine("Обновления:");
@@ -97,6 +131,10 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine();
         }
 
+        /// <summary>
+        /// Добавляет команды просмотра журнала безопасности.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendSecurityCommands(StringBuilder builder)
         {
             builder.AppendLine("Безопасность:");
@@ -104,6 +142,10 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine();
         }
 
+        /// <summary>
+        /// Добавляет административные команды.
+        /// </summary>
+        /// <param name="builder">Буфер текста справки.</param>
         private static void AppendAdminCommands(StringBuilder builder)
         {
             builder.AppendLine("Администрирование:");
