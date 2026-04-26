@@ -38,7 +38,9 @@ namespace CursovoyProjectxDxD.Commands
             MonitoringService monitoringService = context.GetRequiredService<MonitoringService>();
             SecurityLogService securityLogService = context.GetRequiredService<SecurityLogService>();
 
-            if (context.Args[1].Equals("device", StringComparison.OrdinalIgnoreCase))
+            if (context.Args[1].Equals("add", StringComparison.OrdinalIgnoreCase) ||
+                context.Args[1].Equals("list", StringComparison.OrdinalIgnoreCase) ||
+                context.Args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
             {
                 return await ExecuteDeviceCommandAsync(context.Args, monitoringService, securityLogService, cancellationToken);
             }
@@ -61,22 +63,17 @@ namespace CursovoyProjectxDxD.Commands
             SecurityLogService securityLogService,
             CancellationToken cancellationToken)
         {
-            if (args.Length < 3)
+            if (args[1].Equals("add", StringComparison.OrdinalIgnoreCase))
             {
-                return CommandResult.Fail(GetUsage());
-            }
-
-            if (args[2].Equals("add", StringComparison.OrdinalIgnoreCase))
-            {
-                if (args.Length < 5)
+                if (args.Length < 4)
                 {
-                    return CommandResult.Fail("Использование: watch device add <deviceKey> <name> [address] [description]");
+                    return CommandResult.Fail("Использование: watch add <deviceKey> <name> [address] [description]");
                 }
 
-                string deviceKey = args[3];
-                string name = args[4];
-                string address = args.Length >= 6 ? args[5] : null;
-                string description = args.Length >= 7 ? string.Join(" ", args, 6, args.Length - 6) : null;
+                string deviceKey = args[2];
+                string name = args[3];
+                string address = args.Length >= 5 ? args[4] : null;
+                string description = args.Length >= 6 ? string.Join(" ", args, 5, args.Length - 5) : null;
 
                 await monitoringService.SaveDeviceAsync(deviceKey, name, address, description, cancellationToken);
                 await securityLogService.WriteCurrentUserEventAsync("watch_device_save", "Устройство мониторинга сохранено.", deviceKey, cancellationToken);
@@ -84,8 +81,13 @@ namespace CursovoyProjectxDxD.Commands
                 return CommandResult.Ok("Устройство сохранено: " + deviceKey);
             }
 
-            if (args[2].Equals("list", StringComparison.OrdinalIgnoreCase))
+            if (args[1].Equals("list", StringComparison.OrdinalIgnoreCase))
             {
+                if (args.Length != 2)
+                {
+                    return CommandResult.Fail("Использование: watch list");
+                }
+
                 IReadOnlyList<MonitoredDevice> devices = await monitoringService.ListDevicesAsync(cancellationToken);
                 if (devices.Count == 0)
                 {
@@ -95,14 +97,14 @@ namespace CursovoyProjectxDxD.Commands
                 return CommandResult.Ok(FormatDevices(devices));
             }
 
-            if (args[2].Equals("del", StringComparison.OrdinalIgnoreCase))
+            if (args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
             {
-                if (args.Length != 4)
+                if (args.Length != 3)
                 {
-                    return CommandResult.Fail("Использование: watch device del <deviceKey>");
+                    return CommandResult.Fail("Использование: watch del <deviceKey>");
                 }
 
-                string deviceKey = args[3];
+                string deviceKey = args[2];
                 bool deleted = await monitoringService.DeleteDeviceAsync(deviceKey, cancellationToken);
                 await securityLogService.WriteCurrentUserEventAsync(
                     deleted ? "watch_device_delete" : "watch_device_delete_failed",
@@ -216,10 +218,10 @@ namespace CursovoyProjectxDxD.Commands
         {
             return
                 "Команды мониторинга:\n" +
-                "watch device add <deviceKey> <name> [address] [description]\n" +
-                "watch device list\n" +
-                "watch device del <deviceKey>\n" +
-                "watch show <deviceKey> [count]";
+                "watch list\n" +
+                "watch show <deviceKey> [count]\n" +
+                "watch add <deviceKey> <name> [address] [description]\n" +
+                "watch del <deviceKey>";
         }
 
         #endregion
