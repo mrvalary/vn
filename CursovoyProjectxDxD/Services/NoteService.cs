@@ -7,7 +7,9 @@ using Npgsql;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Сервис работы с заметками через PostgreSQL.
+    /// <summary>
+    /// Сервис работы с заметками через PostgreSQL.
+    /// </summary>
     public sealed class NoteService
     {
         // SQL добавления заметки текущего пользователя.
@@ -63,7 +65,9 @@ namespace CursovoyProjectxDxD.Services
         // Сервис текущей сессии нужен для user_id и проверки роли.
         private readonly AuthSessionService _sessionService;
 
-        // Получаем зависимости через DI.
+        /// <summary>
+        /// Получаем зависимости через DI.
+        /// </summary>
         public NoteService(DatabaseConnectionFactory connectionFactory, AuthSessionService sessionService)
         {
             // Сохраняем фабрику соединений.
@@ -72,7 +76,9 @@ namespace CursovoyProjectxDxD.Services
             _sessionService = sessionService;
         }
 
-        // Добавляет новую заметку текущего пользователя.
+        /// <summary>
+        /// Добавляет новую заметку текущего пользователя.
+        /// </summary>
         public async Task<NoteRecord> AddNoteAsync(string text, CancellationToken cancellationToken)
         {
             // Пользователь должен быть авторизован.
@@ -111,7 +117,9 @@ namespace CursovoyProjectxDxD.Services
             throw new InvalidOperationException("Не удалось сохранить заметку в базе данных.");
         }
 
-        // Удаляет заметку текущего пользователя по id.
+        /// <summary>
+        /// Удаляет заметку текущего пользователя по id.
+        /// </summary>
         public async Task<bool> DeleteNoteAsync(int noteId, CancellationToken cancellationToken)
         {
             // Пользователь должен быть авторизован.
@@ -134,7 +142,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Возвращает все заметки текущего пользователя.
+        /// <summary>
+        /// Возвращает все заметки текущего пользователя.
+        /// </summary>
         public async Task<IReadOnlyList<NoteRecord>> ListNotesAsync(CancellationToken cancellationToken)
         {
             // Пользователь должен быть авторизован.
@@ -144,7 +154,9 @@ namespace CursovoyProjectxDxD.Services
             return await ReadNotesWithCurrentUserAsync(ListOwnNotesSql, null, cancellationToken);
         }
 
-        // Ищет заметки текущего пользователя по фрагменту текста.
+        /// <summary>
+        /// Ищет заметки текущего пользователя по фрагменту текста.
+        /// </summary>
         public async Task<IReadOnlyList<NoteRecord>> SearchNotesAsync(string query, CancellationToken cancellationToken)
         {
             // Пользователь должен быть авторизован.
@@ -163,7 +175,9 @@ namespace CursovoyProjectxDxD.Services
             return await ReadNotesWithCurrentUserAsync(SearchOwnNotesSql, pattern, cancellationToken);
         }
 
-        // Редактирует заметку текущего пользователя.
+        /// <summary>
+        /// Редактирует заметку текущего пользователя.
+        /// </summary>
         public async Task<bool> UpdateOwnNoteAsync(int noteId, string text, CancellationToken cancellationToken)
         {
             // Пользователь должен быть авторизован.
@@ -189,7 +203,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Возвращает заметки указанного пользователя для администратора.
+        /// <summary>
+        /// Возвращает заметки указанного пользователя для администратора.
+        /// </summary>
         public async Task<IReadOnlyList<NoteRecord>> ListNotesByLoginForAdminAsync(string login, CancellationToken cancellationToken)
         {
             // Метод доступен только администратору.
@@ -225,7 +241,9 @@ namespace CursovoyProjectxDxD.Services
             return notes;
         }
 
-        // Возвращает любую заметку по id для администратора.
+        /// <summary>
+        /// Возвращает любую заметку по id для администратора.
+        /// </summary>
         public async Task<NoteRecord> GetNoteByIdForAdminAsync(int noteId, CancellationToken cancellationToken)
         {
             // Метод доступен только администратору.
@@ -254,7 +272,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Редактирует любую заметку от имени администратора.
+        /// <summary>
+        /// Редактирует любую заметку от имени администратора.
+        /// </summary>
         public async Task<bool> UpdateAnyNoteForAdminAsync(int noteId, string text, CancellationToken cancellationToken)
         {
             // Метод доступен только администратору.
@@ -279,7 +299,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Читает заметки текущего пользователя.
+        /// <summary>
+        /// Читает заметки текущего пользователя.
+        /// </summary>
         private async Task<IReadOnlyList<NoteRecord>> ReadNotesWithCurrentUserAsync(string sql, string pattern, CancellationToken cancellationToken)
         {
             // Список результатов.
@@ -313,7 +335,9 @@ namespace CursovoyProjectxDxD.Services
             return notes;
         }
 
-        // Проверяет, что пользователь вошёл в систему.
+        /// <summary>
+        /// Проверяет, что пользователь вошёл в систему.
+        /// </summary>
         private void EnsureAuthenticated()
         {
             if (!_sessionService.CurrentUserId.HasValue)
@@ -322,7 +346,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Проверяет, что текущий пользователь является администратором.
+        /// <summary>
+        /// Проверяет, что текущий пользователь является администратором.
+        /// </summary>
         private void EnsureAdmin()
         {
             // Сначала должна быть активная сессия.
@@ -335,7 +361,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Проверяет корректность id заметки.
+        /// <summary>
+        /// Проверяет корректность id заметки.
+        /// </summary>
         private static void EnsureValidNoteId(int noteId)
         {
             if (noteId <= 0)
@@ -344,7 +372,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Проверяет текст заметки.
+        /// <summary>
+        /// Проверяет текст заметки.
+        /// </summary>
         private static void EnsureValidText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -353,7 +383,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Преобразует строку NpgsqlDataReader в модель заметки.
+        /// <summary>
+        /// Преобразует строку NpgsqlDataReader в модель заметки.
+        /// </summary>
         private static NoteRecord ReadNoteRecord(NpgsqlDataReader reader)
         {
             return new NoteRecord

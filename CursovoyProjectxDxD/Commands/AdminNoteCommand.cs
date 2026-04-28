@@ -7,16 +7,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Группа админских команд просмотра и редактирования любых заметок.
+    /// <summary>
+    /// Группа админских команд просмотра и редактирования любых заметок.
+    /// </summary>
     public sealed class AdminNoteCommand : ICommand
     {
-        // Каноническое имя команды.
+        /// <summary>
+        /// Каноническое имя команды.
+        /// </summary>
         public string Name => "admin nt";
 
-        // Описание команды для help.
-        public string Description => "Админ: view/edit любой заметки";
+        /// <summary>
+        /// Описание команды для help.
+        /// </summary>
+        public string Description => "Админ: просмотр и редактирование любой заметки";
 
-        // Выполняет выбранное действие над заметкой.
+        /// <summary>
+        /// Выполняет выбранное действие над заметкой.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем текущую сессию.
@@ -49,7 +57,9 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Fail(GetUsage());
         }
 
-        // Показывает любую заметку по id.
+        /// <summary>
+        /// Показывает любую заметку по id.
+        /// </summary>
         private static async Task<CommandResult> ViewNoteAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
@@ -87,7 +97,9 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Ok(FormatNote(note));
         }
 
-        // Редактирует любую заметку по id.
+        /// <summary>
+        /// Редактирует любую заметку по id.
+        /// </summary>
         private static async Task<CommandResult> EditNoteAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
@@ -128,19 +140,23 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Ok("Заметка #" + noteId + " обновлена администратором.");
         }
 
-        // Форматирует одну заметку.
+        /// <summary>
+        /// Форматирует одну заметку.
+        /// </summary>
         private static string FormatNote(NoteRecord note)
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("Заметка #" + note.Id);
-            builder.AppendLine("Автор: " + note.AuthorLogin + " (user_id: " + note.UserId + ")");
+            builder.AppendLine("Автор: " + note.AuthorLogin + " (id пользователя: " + note.UserId + ")");
             builder.AppendLine("Создана: " + note.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
             builder.AppendLine("Текст:");
             builder.AppendLine(note.Text);
             return builder.ToString().TrimEnd();
         }
 
-        // Возвращает справку по группе admin nt.
+        /// <summary>
+        /// Возвращает справку по группе admin nt.
+        /// </summary>
         private static string GetUsage()
         {
             return "Использование:\n" +
@@ -148,7 +164,9 @@ namespace CursovoyProjectxDxD.Commands
                    "admin nt edit <id> <новый текст>";
         }
 
-        // Записывает действие администратора в журнал безопасности.
+        /// <summary>
+        /// Записывает действие администратора в журнал безопасности.
+        /// </summary>
         private static async Task WriteAdminLogAsync(CommandContext context, string eventType, string message, string target, CancellationToken cancellationToken)
         {
             SecurityLogService securityLogService = context.GetRequiredService<SecurityLogService>();

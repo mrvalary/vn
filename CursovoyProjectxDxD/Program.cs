@@ -61,6 +61,9 @@ namespace CursovoyProjectxDxD
                 return 1;
             }
 
+            // Watcher-агент должен быть запущен вместе с основным приложением, а не после ручной команды.
+            WatcherLaunchResult watcherLaunchResult = EnsureWatcherStarted(serviceProvider);
+
             // Сначала просим пользователя пройти авторизацию через API.
             bool isAuthorized = await RunAuthorizationMenuAsync(serviceProvider);
 
@@ -76,6 +79,7 @@ namespace CursovoyProjectxDxD
             // После авторизации приложение выполняет стартовые действия.
             Console.WriteLine("Интерактивная консоль vn запущена.");
             Console.WriteLine("Текущая версия приложения: " + AppVersionProvider.GetCurrentVersion());
+            Console.WriteLine(watcherLaunchResult.Message);
             await PrintStartupUpdateInfoAsync(serviceProvider);
             Console.WriteLine();
 
@@ -101,7 +105,7 @@ namespace CursovoyProjectxDxD
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Не удалось подключиться к базе данных: " + ex.Message);
+                Console.WriteLine("Не удалось подключиться к базе данных: " + DatabaseConnectionFactory.FormatDatabaseError(ex));
                 return false;
             }
         }
@@ -163,6 +167,24 @@ namespace CursovoyProjectxDxD
 
                 // Для неизвестной клавиши показываем короткое сообщение.
                 ShowMessage("Неизвестная команда.", false);
+            }
+        }
+
+        /// <summary>
+        /// Проверяет запуск watcher-агента и запускает его, если он ещё не работает.
+        /// </summary>
+        /// <param name="serviceProvider">Контейнер сервисов приложения.</param>
+        /// <returns>Результат проверки и запуска watcher-а.</returns>
+        private static WatcherLaunchResult EnsureWatcherStarted(ServiceProvider serviceProvider)
+        {
+            try
+            {
+                WatcherLauncherService watcherLauncher = serviceProvider.GetRequiredService<WatcherLauncherService>();
+                return watcherLauncher.EnsureStarted();
+            }
+            catch (Exception ex)
+            {
+                return WatcherLaunchResult.Failed("не удалось проверить watcher-агент: " + ex.Message);
             }
         }
 
@@ -353,6 +375,10 @@ namespace CursovoyProjectxDxD
                 if (updateInfo.IsAvailable)
                 {
                     Console.WriteLine("Доступно обновление до версии " + updateInfo.LatestVersion + ".");
+                    if (!string.IsNullOrWhiteSpace(updateInfo.ReleaseName))
+                    {
+                        Console.WriteLine("Релиз: " + updateInfo.ReleaseName);
+                    }
                 }
                 else
                 {
@@ -386,6 +412,8 @@ namespace CursovoyProjectxDxD
             services.AddSingleton<GitHubReleaseService>();
             // Регистрируем сервис запуска установщика.
             services.AddSingleton<InstallerLauncherService>();
+            // Регистрируем сервис автозапуска watcher-агента.
+            services.AddSingleton<WatcherLauncherService>();
             // Регистрируем фабрику соединений с PostgreSQL.
             services.AddSingleton<DatabaseConnectionFactory>();
             // Регистрируем сервис инициализации схемы БД.
@@ -411,6 +439,8 @@ namespace CursovoyProjectxDxD
         {
             // Команда справки.
             registry.Register(new HelpCommand(registry));
+            // Команда очистки консоли.
+            registry.Register(new ClearCommand());
             // Команда версии.
             registry.Register(new VersionCommand());
             // Команда добавления заметки.
@@ -421,6 +451,8 @@ namespace CursovoyProjectxDxD
             registry.Register(new NoteEditCommand());
             // Команда просмотра списка заметок.
             registry.Register(new NoteListCommand());
+            // Команда быстрого просмотра последних заметок.
+            registry.Register(new NoteRecentCommand());
             // Команда поиска заметок по тексту.
             registry.Register(new NoteSearchCommand());
             // Команда выхода из текущего аккаунта.
@@ -456,6 +488,9 @@ namespace CursovoyProjectxDxD
                 if (args[0].Equals("help", StringComparison.OrdinalIgnoreCase))
                     return "help";
 
+                if (args[0].Equals("clear", StringComparison.OrdinalIgnoreCase))
+                    return "clear";
+
                 if (args[0].Equals("version", StringComparison.OrdinalIgnoreCase))
                     return "version";
             }
@@ -485,6 +520,12 @@ namespace CursovoyProjectxDxD
                     args[1].Equals("list", StringComparison.OrdinalIgnoreCase))
                 {
                     return "nt list";
+                }
+
+                if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&
+                    args[1].Equals("recent", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "nt recent";
                 }
 
                 if (args[0].Equals("nt", StringComparison.OrdinalIgnoreCase) &&

@@ -5,16 +5,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда удаления заметки по её идентификатору.
+    /// <summary>
+    /// Команда удаления заметки по её идентификатору.
+    /// </summary>
     public sealed class NoteDeleteCommand : ICommand
     {
-        // Имя команды в CLI.
+        /// <summary>
+        /// Имя команды в CLI.
+        /// </summary>
         public string Name => "nt del";
 
-        // Краткое описание команды для help.
+        /// <summary>
+        /// Краткое описание команды для help.
+        /// </summary>
         public string Description => "Удаление заметки: nt del <id>";
 
-        // Выполняет удаление заметки из PostgreSQL.
+        /// <summary>
+        /// Выполняет удаление заметки из PostgreSQL.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис заметок.

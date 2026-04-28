@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 
 namespace CursovoyProjectxDxD.Core
 {
-    // Контракт любой команды CLI.
+    /// <summary>
+    /// Контракт любой команды CLI.
+    /// </summary>
     public interface ICommand
     {
         // Имя команды, по которому она ищется в реестре.

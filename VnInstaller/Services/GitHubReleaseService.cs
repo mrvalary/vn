@@ -9,7 +9,9 @@ using VnInstaller.Models;
 
 namespace VnInstaller.Services
 {
-    // Сервис чтения latest release для установщика.
+    /// <summary>
+    /// Сервис чтения latest release для установщика.
+    /// </summary>
     public sealed class GitHubReleaseService
     {
         // HTTP-клиент для обращений к GitHub API.
@@ -20,7 +22,10 @@ namespace VnInstaller.Services
         // Имя репозитория.
         private const string Repo = "vn";
 
-        // Настраиваем клиент один раз при создании сервиса.
+        /// <summary>
+        /// Создает сервис чтения релизов и настраивает HTTP-заголовки GitHub API.
+        /// </summary>
+        /// <param name="httpClient">HTTP-клиент для запросов к GitHub.</param>
         public GitHubReleaseService(HttpClient httpClient)
         {
             // Сохраняем экземпляр клиента.
@@ -39,7 +44,11 @@ namespace VnInstaller.Services
             }
         }
 
-        // Получает последний релиз и выбирает zip-архив приложения.
+        /// <summary>
+        /// Получает последний релиз и выбирает zip-архив приложения.
+        /// </summary>
+        /// <param name="cancellationToken">Токен отмены HTTP-запроса.</param>
+        /// <returns>Информация о последнем релизе и архиве обновления.</returns>
         public async Task<AppUpdateInfo> GetLatestReleaseAsync(CancellationToken cancellationToken)
         {
             // Формируем URL latest release.
@@ -59,7 +68,7 @@ namespace VnInstaller.Services
                 // Пустой результат считаем ошибкой.
                 if (release == null)
                 {
-                    throw new InvalidOperationException("GitHub release response is empty.");
+                    throw new InvalidOperationException("GitHub вернул пустой ответ о релизе.");
                 }
 
                 // Ищем zip-архив среди ассетов релиза.
@@ -80,7 +89,11 @@ namespace VnInstaller.Services
             }
         }
 
-        // Приводит тег релиза к виду без префикса v.
+        /// <summary>
+        /// Приводит тег релиза к виду без префикса v.
+        /// </summary>
+        /// <param name="tag">Тег релиза GitHub.</param>
+        /// <returns>Версия без префикса v.</returns>
         private static string NormalizeVersion(string tag)
         {
             // Если тег начинается с v, отрезаем его.

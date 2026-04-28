@@ -9,7 +9,9 @@ using Npgsql;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Сервис регистрации, входа и администрирования учётных записей.
+    /// <summary>
+    /// Сервис регистрации, входа и администрирования учётных записей.
+    /// </summary>
     public sealed class AuthService
     {
         // Минимальная длина пароля для обычной регистрации и админского создания пользователя.
@@ -49,21 +51,27 @@ namespace CursovoyProjectxDxD.Services
         // Фабрика создаёт открытые подключения к PostgreSQL.
         private readonly DatabaseConnectionFactory _connectionFactory;
 
-        // Получаем зависимости через DI.
+        /// <summary>
+        /// Получаем зависимости через DI.
+        /// </summary>
         public AuthService(DatabaseConnectionFactory connectionFactory)
         {
             // Сохраняем фабрику подключений для всех методов сервиса.
             _connectionFactory = connectionFactory;
         }
 
-        // Регистрирует обычного пользователя с ролью user.
+        /// <summary>
+        /// Регистрирует обычного пользователя с ролью user.
+        /// </summary>
         public async Task<AuthResult> RegisterAsync(string login, string password, CancellationToken cancellationToken)
         {
             // Самостоятельная регистрация всегда создаёт обычного пользователя.
             return await CreateUserInternalAsync(login, password, UserRole.User, "Пользователь успешно зарегистрирован.", cancellationToken);
         }
 
-        // Выполняет вход пользователя по логину и паролю.
+        /// <summary>
+        /// Выполняет вход пользователя по логину и паролю.
+        /// </summary>
         public async Task<AuthResult> AuthenticateAsync(string login, string password, CancellationToken cancellationToken)
         {
             try
@@ -136,7 +144,7 @@ namespace CursovoyProjectxDxD.Services
             {
                 _connectionFactory.ClearRuntimeConnectionString();
                 // Ошибку подключения или SQL возвращаем пользователю понятным сообщением.
-                return AuthResult.Failure("Ошибка при аутентификации: " + ex.Message);
+                return AuthResult.Failure("Ошибка при аутентификации: " + DatabaseConnectionFactory.FormatDatabaseError(ex));
             }
         }
 
@@ -149,10 +157,11 @@ namespace CursovoyProjectxDxD.Services
                     command.Parameters.AddWithValue("roleName", roleName);
                     object result = await command.ExecuteScalarAsync(cancellationToken);
                     string connectionString = result == null || result == DBNull.Value ? null : result.ToString();
+                    connectionString = _connectionFactory.AlignRoleConnectionString(connectionString);
 
                     if (string.IsNullOrWhiteSpace(connectionString))
                     {
-                        throw new InvalidOperationException("Для роли " + roleName + " не настроена строка подключения.");
+                        throw new InvalidOperationException("Для роли " + UserRole.GetDisplayName(roleName) + " не настроена строка подключения.");
                     }
 
                     using (NpgsqlConnection roleConnection = new NpgsqlConnection(connectionString))
@@ -165,14 +174,18 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Создаёт пользователя от имени администратора с выбранной ролью.
+        /// <summary>
+        /// Создаёт пользователя от имени администратора с выбранной ролью.
+        /// </summary>
         public async Task<AuthResult> CreateUserAsync(string login, string password, string roleName, CancellationToken cancellationToken)
         {
             // Админ может создать user или admin.
             return await CreateUserInternalAsync(login, password, roleName, null, cancellationToken);
         }
 
-        // Удаляет пользователя по логину.
+        /// <summary>
+        /// Удаляет пользователя по логину.
+        /// </summary>
         public async Task<bool> DeleteUserAsync(string login, CancellationToken cancellationToken)
         {
             // Нормализуем логин.
@@ -191,7 +204,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Блокирует или разблокирует пользователя.
+        /// <summary>
+        /// Блокирует или разблокирует пользователя.
+        /// </summary>
         public async Task<bool> SetUserBlockedAsync(string login, bool isBlocked, CancellationToken cancellationToken)
         {
             // Нормализуем логин.
@@ -211,7 +226,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Возвращает информацию о пользователе.
+        /// <summary>
+        /// Возвращает информацию о пользователе.
+        /// </summary>
         public async Task<UserAccount> GetUserInfoAsync(string login, CancellationToken cancellationToken)
         {
             // Нормализуем логин.
@@ -238,7 +255,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Возвращает список всех пользователей.
+        /// <summary>
+        /// Возвращает список всех пользователей.
+        /// </summary>
         public async Task<IReadOnlyList<UserAccount>> ListUsersAsync(CancellationToken cancellationToken)
         {
             // SQL списка пользователей держим внутри метода, потому что он нужен только здесь.
@@ -271,7 +290,9 @@ namespace CursovoyProjectxDxD.Services
             return users;
         }
 
-        // Общий метод создания пользователя для регистрации и админской команды.
+        /// <summary>
+        /// Общий метод создания пользователя для регистрации и админской команды.
+        /// </summary>
         private async Task<AuthResult> CreateUserInternalAsync(string login, string password, string roleName, string successMessage, CancellationToken cancellationToken)
         {
             try
@@ -338,18 +359,22 @@ namespace CursovoyProjectxDxD.Services
             catch (Exception ex)
             {
                 // Возвращаем ошибку как AuthResult, чтобы команды не падали аварийно.
-                return AuthResult.Failure("Ошибка создания пользователя: " + ex.Message);
+                return AuthResult.Failure("Ошибка создания пользователя: " + DatabaseConnectionFactory.FormatDatabaseError(ex));
             }
         }
 
-        // Приводит строку к безопасному виду.
+        /// <summary>
+        /// Приводит строку к безопасному виду.
+        /// </summary>
         private static string Normalize(string value)
         {
             // null превращаем в пустую строку, пробелы по краям убираем.
             return value == null ? string.Empty : value.Trim();
         }
 
-        // Нормализует роль: пустая роль превращается в обычного пользователя.
+        /// <summary>
+        /// Нормализует роль: пустая роль превращается в обычного пользователя.
+        /// </summary>
         private static string NormalizeRole(string value)
         {
             // Роли хранятся маленькими латинскими строками.
@@ -357,7 +382,9 @@ namespace CursovoyProjectxDxD.Services
             return string.IsNullOrWhiteSpace(roleName) ? UserRole.User : roleName;
         }
 
-        // Проверяет, что роль входит в список поддерживаемых ролей.
+        /// <summary>
+        /// Проверяет, что роль входит в список поддерживаемых ролей.
+        /// </summary>
         private static bool IsKnownRole(string roleName)
         {
             return roleName == UserRole.User ||
@@ -365,7 +392,9 @@ namespace CursovoyProjectxDxD.Services
                    roleName == UserRole.Statistician;
         }
 
-        // Проверяет логин и пароль перед созданием пользователя.
+        /// <summary>
+        /// Проверяет логин и пароль перед созданием пользователя.
+        /// </summary>
         private static AuthResult ValidateCredentials(string login, string password)
         {
             // Логин обязателен.
@@ -390,7 +419,9 @@ namespace CursovoyProjectxDxD.Services
             return AuthResult.Success("Данные корректны.");
         }
 
-        // Читает UserAccount из текущей строки NpgsqlDataReader.
+        /// <summary>
+        /// Читает UserAccount из текущей строки NpgsqlDataReader.
+        /// </summary>
         private static UserAccount ReadUserAccount(NpgsqlDataReader reader)
         {
             return new UserAccount
@@ -403,7 +434,9 @@ namespace CursovoyProjectxDxD.Services
             };
         }
 
-        // Вычисляет MD5-хэш строки.
+        /// <summary>
+        /// Вычисляет MD5-хэш строки.
+        /// </summary>
         private static string ComputeMd5(string value)
         {
             // Создаём объект алгоритма хэширования.

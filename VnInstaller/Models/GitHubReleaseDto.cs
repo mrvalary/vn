@@ -3,14 +3,20 @@ using System.Text.Json.Serialization;
 
 namespace VnInstaller.Models
 {
-    // DTO релиза GitHub с набором файлов-ассетов.
+    /// <summary>
+    /// DTO релиза GitHub с набором файлов-ассетов.
+    /// </summary>
     public sealed class GitHubReleaseDto
     {
-        // Тег релиза.
+        /// <summary>
+        /// Тег релиза.
+        /// </summary>
         [JsonPropertyName("tag_name")]
         public string TagName { get; set; }
 
-        // Список ассетов релиза.
+        /// <summary>
+        /// Список ассетов релиза.
+        /// </summary>
         [JsonPropertyName("assets")]
         public List<GitHubAssetDto> Assets { get; set; }
     }

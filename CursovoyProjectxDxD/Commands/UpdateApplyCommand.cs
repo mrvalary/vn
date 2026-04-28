@@ -7,22 +7,30 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда запуска обновления через внешний установщик.
+    /// <summary>
+    /// Команда запуска обновления через внешний установщик.
+    /// </summary>
     public sealed class UpdateApplyCommand : ICommand
     {
-        // Имя команды в CLI.
+        /// <summary>
+        /// Имя команды в CLI.
+        /// </summary>
         public string Name
         {
             get { return "update apply"; }
         }
 
-        // Описание команды для help.
+        /// <summary>
+        /// Описание команды для help.
+        /// </summary>
         public string Description
         {
             get { return "Запуск внешнего установщика обновления"; }
         }
 
-        // Проверяет наличие новой версии и запускает vn-installer без аргументов.
+        /// <summary>
+        /// Проверяет наличие новой версии и запускает vn-installer без аргументов.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис проверки релизов.

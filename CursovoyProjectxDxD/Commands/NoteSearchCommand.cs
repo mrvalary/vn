@@ -8,16 +8,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда поиска заметок текущего пользователя по тексту.
+    /// <summary>
+    /// Команда поиска заметок текущего пользователя по тексту.
+    /// </summary>
     public sealed class NoteSearchCommand : ICommand
     {
-        // Имя команды, которое вводится в CLI.
+        /// <summary>
+        /// Имя команды, которое вводится в CLI.
+        /// </summary>
         public string Name => "nt search";
 
-        // Описание команды для help.
+        /// <summary>
+        /// Описание команды для help.
+        /// </summary>
         public string Description => "Поиск заметок: nt search <текст>";
 
-        // Выполняет поиск заметок по фрагменту текста.
+        /// <summary>
+        /// Выполняет поиск заметок по фрагменту текста.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис заметок из DI-контейнера.

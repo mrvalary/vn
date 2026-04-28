@@ -5,16 +5,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда редактирования своей заметки.
+    /// <summary>
+    /// Команда редактирования своей заметки.
+    /// </summary>
     public sealed class NoteEditCommand : ICommand
     {
-        // Имя команды в интерактивной консоли.
+        /// <summary>
+        /// Имя команды в интерактивной консоли.
+        /// </summary>
         public string Name => "nt edit";
 
-        // Описание команды для справки.
+        /// <summary>
+        /// Описание команды для справки.
+        /// </summary>
         public string Description => "Редактирование своей заметки: nt edit <id> <новый текст>";
 
-        // Выполняет редактирование заметки текущего пользователя.
+        /// <summary>
+        /// Выполняет редактирование заметки текущего пользователя.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис заметок из DI.

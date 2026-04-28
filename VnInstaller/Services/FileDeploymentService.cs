@@ -4,19 +4,28 @@ using System.Threading;
 
 namespace VnInstaller.Services
 {
-    // Сервис копирования файлов релиза в целевую папку приложения.
+    /// <summary>
+    /// Сервис копирования файлов релиза в целевую папку приложения.
+    /// </summary>
     public sealed class FileDeploymentService
     {
         // Логгер нужен для фиксации этапов копирования.
         private readonly FileLogger _logger;
 
-        // Получаем логгер через конструктор.
+        /// <summary>
+        /// Создает сервис копирования файлов релиза.
+        /// </summary>
+        /// <param name="logger">Логгер установщика.</param>
         public FileDeploymentService(FileLogger logger)
         {
             _logger = logger;
         }
 
-        // Разворачивает распакованные файлы в целевую папку.
+        /// <summary>
+        /// Разворачивает распакованные файлы в целевую папку.
+        /// </summary>
+        /// <param name="sourceDirectory">Папка с распакованными файлами релиза.</param>
+        /// <param name="targetDirectory">Целевая папка установки приложения.</param>
         public void Deploy(string sourceDirectory, string targetDirectory)
         {
             // Пишем старт операции в лог.
@@ -72,7 +81,11 @@ namespace VnInstaller.Services
             _logger.Info("Deployment completed.");
         }
 
-        // Копирует файл с несколькими повторными попытками.
+        /// <summary>
+        /// Копирует файл с несколькими повторными попытками.
+        /// </summary>
+        /// <param name="sourceFile">Исходный файл.</param>
+        /// <param name="targetFile">Файл назначения.</param>
         private void CopyFileWithRetry(string sourceFile, string targetFile)
         {
             // Делаем до пяти попыток копирования.
@@ -106,7 +119,11 @@ namespace VnInstaller.Services
             _logger.Info("Copied after retries: " + sourceFile + " -> " + targetFile);
         }
 
-        // Определяет, нужно ли пропустить файл.
+        /// <summary>
+        /// Определяет, нужно ли пропустить файл при копировании релиза.
+        /// </summary>
+        /// <param name="fileName">Имя файла без пути.</param>
+        /// <returns>true, если файл нужно пропустить.</returns>
         private static bool ShouldSkip(string fileName)
         {
             // Лог текущего запуска не должен затираться содержимым архива.

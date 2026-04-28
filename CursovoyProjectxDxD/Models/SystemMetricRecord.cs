@@ -2,41 +2,59 @@ using System;
 
 namespace CursovoyProjectxDxD.Models
 {
-    // Один снимок нагрузки устройства, полученный от VnWatcher.
+    /// <summary>
+    /// Один снимок нагрузки устройства, полученный от VnWatcher.
+    /// </summary>
     public sealed class SystemMetricRecord
     {
         #region Identity
 
-        // Внутренний id записи в system_metrics.
+        /// <summary>
+        /// Внутренний id записи в system_metrics.
+        /// </summary>
         public int Id { get; set; }
 
-        // Id устройства из monitored_devices.
+        /// <summary>
+        /// Id устройства из monitored_devices.
+        /// </summary>
         public int DeviceId { get; set; }
 
-        // Стабильный ключ устройства.
+        /// <summary>
+        /// Стабильный ключ устройства.
+        /// </summary>
         public string DeviceKey { get; set; }
 
-        // Имя устройства на момент чтения метрики.
+        /// <summary>
+        /// Имя устройства на момент чтения метрики.
+        /// </summary>
         public string DeviceName { get; set; }
 
         #endregion
 
         #region Load Values
 
-        // Загрузка CPU в процентах.
+        /// <summary>
+        /// Загрузка CPU в процентах.
+        /// </summary>
         public decimal CpuPercent { get; set; }
 
-        // Загрузка RAM в процентах.
+        /// <summary>
+        /// Загрузка RAM в процентах.
+        /// </summary>
         public decimal RamPercent { get; set; }
 
-        // Загрузка HDD в процентах.
+        /// <summary>
+        /// Загрузка HDD в процентах.
+        /// </summary>
         public decimal HddPercent { get; set; }
 
         #endregion
 
         #region Time
 
-        // Время получения метрики сервером БД.
+        /// <summary>
+        /// Время получения метрики сервером БД.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
 
         #endregion

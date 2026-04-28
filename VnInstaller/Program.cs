@@ -8,7 +8,9 @@ using VnInstaller.Services;
 
 namespace VnInstaller
 {
-    // Точка входа отдельного приложения-установщика.
+    /// <summary>
+    /// Точка входа отдельного приложения-установщика.
+    /// </summary>
     internal class Program
     {
         // Имя корневой папки установки.
@@ -20,7 +22,11 @@ namespace VnInstaller
         // Имя служебного файла с PID обновляемого процесса.
         private const string ProcessIdFileName = "vn-app.pid";
 
-        // Синхронная точка входа для .NET Framework.
+        /// <summary>
+        /// Синхронная точка входа установщика для .NET Framework.
+        /// </summary>
+        /// <param name="args">Аргументы командной строки.</param>
+        /// <returns>Код завершения установщика.</returns>
         private static int Main(string[] args)
         {
             try
@@ -35,7 +41,10 @@ namespace VnInstaller
             }
         }
 
-        // Основной сценарий работы установщика в единственном режиме.
+        /// <summary>
+        /// Выполняет основной сценарий работы установщика в единственном режиме.
+        /// </summary>
+        /// <returns>Код завершения установщика.</returns>
         private static async Task<int> MainAsync()
         {
             // Название окна нужно, чтобы отличать установщик от основного приложения.
@@ -99,7 +108,11 @@ namespace VnInstaller
             }
         }
 
-        // Конфигурирует все сервисы установщика.
+        /// <summary>
+        /// Конфигурирует все сервисы установщика.
+        /// </summary>
+        /// <param name="logFilePath">Путь к файлу лога установщика.</param>
+        /// <returns>Готовый контейнер сервисов установщика.</returns>
         private static ServiceProvider ConfigureServices(string logFilePath)
         {
             // Создаём коллекцию регистраций сервисов.
@@ -128,7 +141,10 @@ namespace VnInstaller
             return services.BuildServiceProvider();
         }
 
-        // Возвращает стандартную папку установки приложения.
+        /// <summary>
+        /// Возвращает стандартную папку установки приложения.
+        /// </summary>
+        /// <returns>Путь к целевой папке приложения.</returns>
         private static string GetTargetDirectory()
         {
             // Получаем LocalAppData текущего пользователя.
@@ -137,7 +153,10 @@ namespace VnInstaller
             return Path.Combine(localAppData, InstallFolderName, AppFolderName);
         }
 
-        // Читает PID обновляемого процесса из служебного файла рядом с установщиком.
+        /// <summary>
+        /// Читает PID обновляемого процесса из служебного файла рядом с установщиком.
+        /// </summary>
+        /// <returns>PID процесса приложения или null, если PID отсутствует.</returns>
         private static int? TryReadAppProcessId()
         {
             // Служебный файл лежит рядом с временной копией установщика.
@@ -160,7 +179,9 @@ namespace VnInstaller
             return processId;
         }
 
-        // Даёт пользователю время прочитать итоговый текст.
+        /// <summary>
+        /// Даёт пользователю время прочитать итоговый текст.
+        /// </summary>
         private static void WaitForUser()
         {
             // Пустая строка визуально отделяет основное сообщение.

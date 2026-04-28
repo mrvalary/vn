@@ -4,7 +4,9 @@ using System.IO;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Сервис запуска внешнего установщика.
+    /// <summary>
+    /// Сервис запуска внешнего установщика.
+    /// </summary>
     public sealed class InstallerLauncherService
     {
         // Имя exe-файла установщика.
@@ -12,7 +14,9 @@ namespace CursovoyProjectxDxD.Services
         // Имя файла с PID обновляемого процесса.
         private const string ProcessIdFileName = "vn-app.pid";
 
-        // Запускает установщик из временной папки в единственном режиме без аргументов.
+        /// <summary>
+        /// Запускает установщик из временной папки в единственном режиме без аргументов.
+        /// </summary>
         public bool Launch()
         {
             // Получаем путь к текущему exe основного приложения.
@@ -46,7 +50,9 @@ namespace CursovoyProjectxDxD.Services
             return process != null;
         }
 
-        // Подготавливает каталог runtime во временной папке.
+        /// <summary>
+        /// Подготавливает каталог runtime во временной папке.
+        /// </summary>
         private static string PrepareRuntimeDirectory(string sourceDirectory, int processId)
         {
             // Временная папка нужна, чтобы установщик не держал локи на свои файлы в каталоге приложения.
@@ -67,7 +73,9 @@ namespace CursovoyProjectxDxD.Services
             return runtimeDirectory;
         }
 
-        // Копирует нужные файлы во временную директорию.
+        /// <summary>
+        /// Копирует нужные файлы во временную директорию.
+        /// </summary>
         private static void CopyInstallerRuntime(string sourceDirectory, string runtimeDirectory)
         {
             // Берём только файлы верхнего уровня рядом с приложением.
@@ -97,7 +105,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Записывает PID текущего приложения в служебный файл для установщика.
+        /// <summary>
+        /// Записывает PID текущего приложения в служебный файл для установщика.
+        /// </summary>
         private static void WriteProcessIdFile(string runtimeDirectory, int processId)
         {
             // Путь к служебному файлу во временной папке.

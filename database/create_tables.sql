@@ -172,16 +172,18 @@ ALTER ROLE vn_watcher LOGIN PASSWORD 'vn_watcher_password';
 ALTER TABLE roles
 ADD COLUMN IF NOT EXISTS connection_string TEXT;
 
+-- В таблице ролей храним только учетные данные роли.
+-- Host, Port и Database приложение всегда берет из NotesDb в App.config.
 UPDATE roles
-SET connection_string = 'Host=192.168.0.102;Port=5432;Username=vn_user_role;Password=vn_user_password;Database=vn'
+SET connection_string = 'Username=vn_user_role;Password=vn_user_password'
 WHERE name = 'user';
 
 UPDATE roles
-SET connection_string = 'Host=192.168.0.102;Port=5432;Username=vn_admin_role;Password=vn_admin_password;Database=vn'
+SET connection_string = 'Username=vn_admin_role;Password=vn_admin_password'
 WHERE name = 'admin';
 
 UPDATE roles
-SET connection_string = 'Host=192.168.0.102;Port=5432;Username=vn_statistician_role;Password=vn_statistician_password;Database=vn'
+SET connection_string = 'Username=vn_statistician_role;Password=vn_statistician_password'
 WHERE name = 'statistician';
 
 CREATE OR REPLACE FUNCTION get_role_connection_string(p_role_name VARCHAR)

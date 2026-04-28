@@ -3,7 +3,9 @@ using System.IO;
 
 namespace VnInstaller.Services
 {
-    // Простой потокобезопасный файловый логгер.
+    /// <summary>
+    /// Простой потокобезопасный файловый логгер.
+    /// </summary>
     public sealed class FileLogger
     {
         // Путь к файлу лога.
@@ -11,19 +13,29 @@ namespace VnInstaller.Services
         // Объект синхронизации для параллельных записей.
         private readonly object _syncRoot = new object();
 
-        // Сохраняем путь к файлу лога.
+        /// <summary>
+        /// Создает файловый логгер.
+        /// </summary>
+        /// <param name="logFilePath">Путь к файлу лога.</param>
         public FileLogger(string logFilePath)
         {
             _logFilePath = logFilePath;
         }
 
-        // Пишет информационное сообщение.
+        /// <summary>
+        /// Пишет информационное сообщение.
+        /// </summary>
+        /// <param name="message">Текст сообщения.</param>
         public void Info(string message)
         {
             Write("INFO", message);
         }
 
-        // Пишет сообщение об ошибке вместе с исключением.
+        /// <summary>
+        /// Пишет сообщение об ошибке вместе с исключением.
+        /// </summary>
+        /// <param name="message">Текст сообщения.</param>
+        /// <param name="exception">Исключение, которое нужно записать в лог.</param>
         public void Error(string message, Exception exception)
         {
             // Начинаем со строки сообщения.
@@ -38,7 +50,11 @@ namespace VnInstaller.Services
             Write("ERROR", fullMessage);
         }
 
-        // Базовый метод записи строки в лог.
+        /// <summary>
+        /// Базовый метод записи строки в лог.
+        /// </summary>
+        /// <param name="level">Уровень сообщения.</param>
+        /// <param name="message">Текст сообщения.</param>
         private void Write(string level, string message)
         {
             // Запись защищена lock, чтобы строки не перемешивались.

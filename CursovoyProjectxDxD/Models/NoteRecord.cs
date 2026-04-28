@@ -2,22 +2,34 @@ using System;
 
 namespace CursovoyProjectxDxD.Models
 {
-    // Модель одной заметки, считанной из PostgreSQL.
+    /// <summary>
+    /// Модель одной заметки, считанной из PostgreSQL.
+    /// </summary>
     public sealed class NoteRecord
     {
-        // Идентификатор заметки в таблице.
+        /// <summary>
+        /// Идентификатор заметки в таблице.
+        /// </summary>
         public int Id { get; set; }
 
-        // Идентификатор автора заметки в таблице users.
+        /// <summary>
+        /// Идентификатор автора заметки в таблице users.
+        /// </summary>
         public int UserId { get; set; }
 
-        // Текст заметки.
+        /// <summary>
+        /// Текст заметки.
+        /// </summary>
         public string Text { get; set; }
 
-        // Логин автора заметки.
+        /// <summary>
+        /// Логин автора заметки.
+        /// </summary>
         public string AuthorLogin { get; set; }
 
-        // Дата и время создания заметки.
+        /// <summary>
+        /// Дата и время создания заметки.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
     }
 }

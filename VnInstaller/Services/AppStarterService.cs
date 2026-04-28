@@ -3,19 +3,27 @@ using System.IO;
 
 namespace VnInstaller.Services
 {
-    // Сервис запуска основного приложения после установки.
+    /// <summary>
+    /// Сервис запуска основного приложения после установки.
+    /// </summary>
     public sealed class AppStarterService
     {
         // Логгер нужен для фиксации запуска.
         private readonly FileLogger _logger;
 
-        // Получаем логгер через конструктор.
+        /// <summary>
+        /// Создает сервис запуска приложения.
+        /// </summary>
+        /// <param name="logger">Логгер установщика.</param>
         public AppStarterService(FileLogger logger)
         {
             _logger = logger;
         }
 
-        // Запускает основное приложение по указанному пути.
+        /// <summary>
+        /// Запускает основное приложение по указанному пути.
+        /// </summary>
+        /// <param name="appExePath">Полный путь к exe основного приложения.</param>
         public void Start(string appExePath)
         {
             // Определяем рабочую директорию процесса.

@@ -84,6 +84,7 @@ namespace CursovoyProjectxDxD.Commands
         {
             builder.AppendLine("Основные:");
             builder.AppendLine("  help                     - показать эту справку");
+            builder.AppendLine("  clear                    - очистить консоль");
             builder.AppendLine("  version                  - показать версию приложения");
             builder.AppendLine("  exit                     - выйти из приложения");
             builder.AppendLine("  auth logout              - выйти из текущей учетной записи");
@@ -99,6 +100,7 @@ namespace CursovoyProjectxDxD.Commands
             builder.AppendLine("Заметки:");
             builder.AppendLine("  nt add \"текст\"           - добавить заметку");
             builder.AppendLine("  nt list                  - список своих заметок");
+            builder.AppendLine("  nt recent [количество]   - последние заметки");
             builder.AppendLine("  nt edit <id> \"текст\"     - изменить свою заметку");
             builder.AppendLine("  nt del <id>              - удалить свою заметку");
             builder.AppendLine("  nt search \"текст\"        - найти заметки по тексту");
@@ -113,9 +115,8 @@ namespace CursovoyProjectxDxD.Commands
         {
             builder.AppendLine("Мониторинг:");
             builder.AppendLine("  watch list               - список устройств мониторинга");
-            builder.AppendLine("  watch show <key> [count] - показать CPU/RAM/HDD устройства");
-            builder.AppendLine("  watch add <key> <name> [address] [description] - добавить или обновить устройство");
-            builder.AppendLine("  watch del <key>          - удалить устройство из мониторинга");
+            builder.AppendLine("  watch status             - проверить, запущен ли watcher-агент");
+            builder.AppendLine("  watch show <имя ПК> [количество] - показать CPU/RAM/HDD устройства");
             builder.AppendLine();
         }
 
@@ -138,7 +139,7 @@ namespace CursovoyProjectxDxD.Commands
         private static void AppendSecurityCommands(StringBuilder builder)
         {
             builder.AppendLine("Безопасность:");
-            builder.AppendLine("  sec logs [count]         - показать журнал безопасности");
+            builder.AppendLine("  sec logs [количество]    - показать журнал безопасности");
             builder.AppendLine();
         }
 
@@ -149,13 +150,13 @@ namespace CursovoyProjectxDxD.Commands
         private static void AppendAdminCommands(StringBuilder builder)
         {
             builder.AppendLine("Администрирование:");
-            builder.AppendLine("  admin user create <login> <password> [user|admin|statistician]");
+            builder.AppendLine("  admin user create <логин> <пароль> [роль: user|admin|statistician]");
             builder.AppendLine("  admin user list");
-            builder.AppendLine("  admin user info <login>");
-            builder.AppendLine("  admin user block <login>");
-            builder.AppendLine("  admin user unblock <login>");
-            builder.AppendLine("  admin user delete <login>");
-            builder.AppendLine("  admin user nt <login>");
+            builder.AppendLine("  admin user info <логин>");
+            builder.AppendLine("  admin user block <логин>");
+            builder.AppendLine("  admin user unblock <логин>");
+            builder.AppendLine("  admin user delete <логин>");
+            builder.AppendLine("  admin user nt <логин>");
             builder.AppendLine("  admin nt view <id>");
             builder.AppendLine("  admin nt edit <id> \"новый текст\"");
         }

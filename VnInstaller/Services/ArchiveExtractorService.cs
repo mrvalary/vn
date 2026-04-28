@@ -3,19 +3,29 @@ using System.IO.Compression;
 
 namespace VnInstaller.Services
 {
-    // Сервис распаковки zip-архива релиза.
+    /// <summary>
+    /// Сервис распаковки zip-архива релиза.
+    /// </summary>
     public sealed class ArchiveExtractorService
     {
         // Логгер нужен для записи этапов распаковки.
         private readonly FileLogger _logger;
 
-        // Получаем логгер через конструктор.
+        /// <summary>
+        /// Создает сервис распаковки архива.
+        /// </summary>
+        /// <param name="logger">Логгер установщика.</param>
         public ArchiveExtractorService(FileLogger logger)
         {
             _logger = logger;
         }
 
-        // Распаковывает архив и возвращает путь к папке с файлами.
+        /// <summary>
+        /// Распаковывает архив и возвращает путь к папке с файлами.
+        /// </summary>
+        /// <param name="archivePath">Путь к zip-архиву релиза.</param>
+        /// <param name="version">Версия релиза для формирования временной папки.</param>
+        /// <returns>Путь к папке с распакованными файлами.</returns>
         public string Extract(string archivePath, string version)
         {
             // Формируем временную папку под конкретную версию.

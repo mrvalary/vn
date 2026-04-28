@@ -2,27 +2,39 @@ using CursovoyProjectxDxD.Models;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Хранит данные текущей локальной сессии пользователя.
+    /// <summary>
+    /// Хранит данные текущей локальной сессии пользователя.
+    /// </summary>
     public sealed class AuthSessionService
     {
         #region Current User
 
-        // Пользователь считается авторизованным, если у него есть id и логин.
+        /// <summary>
+        /// Пользователь считается авторизованным, если у него есть id и логин.
+        /// </summary>
         public bool IsAuthenticated
         {
             get { return CurrentUserId.HasValue && !string.IsNullOrWhiteSpace(CurrentLogin); }
         }
 
-        // Id текущего пользователя из таблицы users.
+        /// <summary>
+        /// Id текущего пользователя из таблицы users.
+        /// </summary>
         public int? CurrentUserId { get; private set; }
 
-        // Логин текущего пользователя.
+        /// <summary>
+        /// Логин текущего пользователя.
+        /// </summary>
         public string CurrentLogin { get; private set; }
 
-        // Системное название роли текущего пользователя.
+        /// <summary>
+        /// Системное название роли текущего пользователя.
+        /// </summary>
         public string CurrentRoleName { get; private set; }
 
-        // Русское название роли для вывода в консоль.
+        /// <summary>
+        /// Русское название роли для вывода в консоль.
+        /// </summary>
         public string CurrentRoleDisplayName
         {
             get { return UserRole.GetDisplayName(CurrentRoleName); }
@@ -32,7 +44,9 @@ namespace CursovoyProjectxDxD.Services
 
         #region Session State
 
-        // Открывает сессию после успешного входа.
+        /// <summary>
+        /// Открывает сессию после успешного входа.
+        /// </summary>
         public void SignIn(int userId, string login, string roleName)
         {
             CurrentUserId = userId;
@@ -40,7 +54,9 @@ namespace CursovoyProjectxDxD.Services
             CurrentRoleName = string.IsNullOrWhiteSpace(roleName) ? UserRole.User : roleName;
         }
 
-        // Полностью очищает данные текущей сессии.
+        /// <summary>
+        /// Полностью очищает данные текущей сессии.
+        /// </summary>
         public void SignOut()
         {
             CurrentUserId = null;
@@ -52,25 +68,33 @@ namespace CursovoyProjectxDxD.Services
 
         #region Role Checks
 
-        // Проверяет, является ли текущий пользователь администратором.
+        /// <summary>
+        /// Проверяет, является ли текущий пользователь администратором.
+        /// </summary>
         public bool IsAdmin()
         {
             return CurrentRoleName == UserRole.Admin;
         }
 
-        // Проверяет, является ли текущий пользователь статистом.
+        /// <summary>
+        /// Проверяет, является ли текущий пользователь статистом.
+        /// </summary>
         public bool IsStatistician()
         {
             return CurrentRoleName == UserRole.Statistician;
         }
 
-        // Мониторинг доступен администратору и статисту.
+        /// <summary>
+        /// Мониторинг доступен администратору и статисту.
+        /// </summary>
         public bool CanManageMonitoring()
         {
             return IsAdmin() || IsStatistician();
         }
 
-        // Логи безопасности доступны только администратору.
+        /// <summary>
+        /// Логи безопасности доступны только администратору.
+        /// </summary>
         public bool CanViewSecurityLogs()
         {
             return IsAdmin();

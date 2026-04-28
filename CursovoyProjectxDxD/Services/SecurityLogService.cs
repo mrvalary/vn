@@ -7,7 +7,9 @@ using Npgsql;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Сервис записи и просмотра журнала безопасности.
+    /// <summary>
+    /// Сервис записи и просмотра журнала безопасности.
+    /// </summary>
     public sealed class SecurityLogService
     {
         // SQL добавления события безопасности.
@@ -28,7 +30,9 @@ namespace CursovoyProjectxDxD.Services
         // Текущая сессия нужна для проверки прав просмотра логов.
         private readonly AuthSessionService _sessionService;
 
-        // Получаем зависимости через DI.
+        /// <summary>
+        /// Получаем зависимости через DI.
+        /// </summary>
         public SecurityLogService(DatabaseConnectionFactory connectionFactory, AuthSessionService sessionService)
         {
             // Сохраняем фабрику подключений.
@@ -37,7 +41,9 @@ namespace CursovoyProjectxDxD.Services
             _sessionService = sessionService;
         }
 
-        // Записывает событие от текущего авторизованного пользователя.
+        /// <summary>
+        /// Записывает событие от текущего авторизованного пользователя.
+        /// </summary>
         public async Task WriteCurrentUserEventAsync(string eventType, string message, string target, CancellationToken cancellationToken)
         {
             // Берём данные текущего пользователя из сессии.
@@ -48,14 +54,18 @@ namespace CursovoyProjectxDxD.Services
             await WriteEventAsync(actorUserId, actorLogin, eventType, message, target, cancellationToken);
         }
 
-        // Записывает событие, когда пользователь ещё не авторизован или вход не удался.
+        /// <summary>
+        /// Записывает событие, когда пользователь ещё не авторизован или вход не удался.
+        /// </summary>
         public async Task WriteAnonymousEventAsync(string actorLogin, string eventType, string message, string target, CancellationToken cancellationToken)
         {
             // Для анонимного события id пользователя неизвестен.
             await WriteEventAsync(null, actorLogin, eventType, message, target, cancellationToken);
         }
 
-        // Возвращает последние события безопасности.
+        /// <summary>
+        /// Возвращает последние события безопасности.
+        /// </summary>
         public async Task<IReadOnlyList<SecurityLogRecord>> ListLogsAsync(int limit, CancellationToken cancellationToken)
         {
             // Смотреть журнал могут только админ и статист.
@@ -98,7 +108,9 @@ namespace CursovoyProjectxDxD.Services
             return logs;
         }
 
-        // Общий метод записи события безопасности.
+        /// <summary>
+        /// Общий метод записи события безопасности.
+        /// </summary>
         private async Task WriteEventAsync(int? actorUserId, string actorLogin, string eventType, string message, string target, CancellationToken cancellationToken)
         {
             try
@@ -125,7 +137,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Проверяет права просмотра журнала безопасности.
+        /// <summary>
+        /// Проверяет права просмотра журнала безопасности.
+        /// </summary>
         private void EnsureCanViewSecurityLogs()
         {
             // Пользователь должен быть авторизован.
@@ -141,7 +155,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Читает запись журнала из текущей строки reader.
+        /// <summary>
+        /// Читает запись журнала из текущей строки reader.
+        /// </summary>
         private static SecurityLogRecord ReadSecurityLog(NpgsqlDataReader reader)
         {
             return new SecurityLogRecord
@@ -156,7 +172,9 @@ namespace CursovoyProjectxDxD.Services
             };
         }
 
-        // Приводит текст к безопасному непустому значению.
+        /// <summary>
+        /// Приводит текст к безопасному непустому значению.
+        /// </summary>
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();

@@ -3,3 +3,4 @@ updates:
   owner: mrvalary
   repo: vn
   assetExtension: .zip
+  httpTimeoutSeconds: 15

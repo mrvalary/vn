@@ -5,16 +5,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда выхода из текущей пользовательской сессии.
+    /// <summary>
+    /// Команда выхода из текущей пользовательской сессии.
+    /// </summary>
     public sealed class AuthLogoutCommand : ICommand
     {
-        // Имя команды, которое вводится пользователем.
+        /// <summary>
+        /// Имя команды, которое вводится пользователем.
+        /// </summary>
         public string Name => "auth logout";
 
-        // Описание команды для help.
+        /// <summary>
+        /// Описание команды для help.
+        /// </summary>
         public string Description => "Выход из текущего аккаунта: auth logout";
 
-        // Очищает локальную сессию пользователя.
+        /// <summary>
+        /// Очищает локальную сессию пользователя.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // AuthSessionService хранит id, логин и роль текущего пользователя.
