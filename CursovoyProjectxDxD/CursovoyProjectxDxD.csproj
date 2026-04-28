@@ -47,19 +47,21 @@
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=10.0.0.5, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.10.0.5\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
+    <Reference Include="Npgsql, Version=4.1.2.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Npgsql.4.1.2\lib\net461\Npgsql.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
     </Reference>
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.IO.Pipelines, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.IO.Pipelines.10.0.5\lib\net462\System.IO.Pipelines.dll</HintPath>
-    </Reference>
     <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
     </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
@@ -76,44 +78,86 @@
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.3\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\HelpCommand.cs" />
+    <Compile Include="Commands\AuthLogoutCommand.cs" />
+    <Compile Include="Commands\AdminNoteCommand.cs" />
+    <Compile Include="Commands\AdminUserCommand.cs" />
+    <Compile Include="Commands\NoteAddCommand.cs" />
+    <Compile Include="Commands\NoteDeleteCommand.cs" />
+    <Compile Include="Commands\NoteEditCommand.cs" />
+    <Compile Include="Commands\NoteListCommand.cs" />
+    <Compile Include="Commands\NoteSearchCommand.cs" />
+    <Compile Include="Commands\SecurityLogsCommand.cs" />
+    <Compile Include="Commands\WatchCommand.cs" />
     <Compile Include="Commands\UpdateApplyCommand.cs" />
     <Compile Include="Commands\UpdateCheckCommand.cs" />
     <Compile Include="Commands\VersionCommand.cs" />
+    <Compile Include="Core\AppVersionProvider.cs" />
     <Compile Include="Core\CommandContext.cs" />
     <Compile Include="Core\CommandRegistry.cs" />
     <Compile Include="Core\CommandResult.cs" />
     <Compile Include="Core\ICommand.cs" />
     <Compile Include="Models\AppUpdateInfo.cs" />
+    <Compile Include="Models\AuthResult.cs" />
     <Compile Include="Models\GitHubAssetDto.cs" />
     <Compile Include="Models\GitHubReleaseDto.cs" />
+    <Compile Include="Models\NoteRecord.cs" />
+    <Compile Include="Models\MonitoredDevice.cs" />
+    <Compile Include="Models\SecurityLogRecord.cs" />
+    <Compile Include="Models\SystemMetricRecord.cs" />
+    <Compile Include="Models\UserAccount.cs" />
+    <Compile Include="Models\UserRole.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\AuthService.cs" />
+    <Compile Include="Services\AuthSessionService.cs" />
+    <Compile Include="Services\DatabaseConnectionFactory.cs" />
     <Compile Include="Services\GitHubReleaseService.cs" />
-    <Compile Include="Services\UpdaterService.cs" />
+    <Compile Include="Services\InstallerLauncherService.cs" />
+    <Compile Include="Services\MonitoringService.cs" />
+    <Compile Include="Services\NoteService.cs" />
+    <Compile Include="Services\SecurityLogService.cs" />
+    <Compile Include="Services\YamlAppSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="vn.yml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\VnInstaller\VnInstaller.csproj">
+      <Project>{5A47A29B-11A0-4D2A-B7C0-E7B672B65E1B}</Project>
+      <Name>VnInstaller</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets" Condition="Exists('..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-      <ErrorText>Данный проект ссылается на пакеты NuGet, отсутствующие на этом компьютере. Используйте восстановление пакетов NuGet, чтобы скачать их.  Дополнительную информацию см. по адресу: http://go.microsoft.com/fwlink/?LinkID=322105. Отсутствует следующий файл: {0}.</ErrorText>
+      <ErrorText>NuGet packages are missing on this computer. Restore packages to continue. Missing file: {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets'))" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(SolutionDir)vn-updater\bin\Release\vn-updater.exe" "$(TargetDir)vn-updater.exe"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(SolutionDir)VnInstaller\bin\$(Configuration)\vn-installer.exe" "$(TargetDir)vn-installer.exe"
+copy /Y "$(SolutionDir)VnInstaller\bin\$(Configuration)\vn-installer.exe.config" "$(TargetDir)vn-installer.exe.config"
+copy /Y "$(SolutionDir)VnInstaller\bin\$(Configuration)\vn-installer.pdb" "$(TargetDir)vn-installer.pdb"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe" "$(TargetDir)vn-watcher.exe"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe.config" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.exe.config" "$(TargetDir)vn-watcher.exe.config"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.pdb" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\vn-watcher.pdb" "$(TargetDir)vn-watcher.pdb"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\watcher.yml" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\watcher.yml" "$(TargetDir)watcher.yml"
+if exist "$(SolutionDir)VnWatcher\bin\$(Configuration)\System.ValueTuple.dll" copy /Y "$(SolutionDir)VnWatcher\bin\$(Configuration)\System.ValueTuple.dll" "$(TargetDir)System.ValueTuple.dll"</PostBuildEvent>
   </PropertyGroup>
 </Project>

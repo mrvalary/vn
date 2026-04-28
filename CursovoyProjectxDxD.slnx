@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="CursovoyProjectxDxD/CursovoyProjectxDxD.csproj" Id="d8e10d34-2a9a-43d1-9c04-2c618aa3c064" />
-  <Project Path="vn-updater/vn-updater.csproj" Id="90f2f5b2-40a2-4bfe-966a-b62ae80969da" />
+  <Project Path="VnInstaller/VnInstaller.csproj" Id="5a47a29b-11a0-4d2a-b7c0-e7b672b65e1b" />
+  <Project Path="VnWatcher/VnWatcher.csproj" Id="8b1e6e13-ab6b-4c72-af63-30847e7c70a1" />
 </Solution>

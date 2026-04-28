@@ -1,0 +1,5 @@
+# Безопасные настройки клиента vn. Пароли и строки подключения остаются в App.config.
+updates:
+  owner: mrvalary
+  repo: vn
+  assetExtension: .zip
