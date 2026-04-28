@@ -150,15 +150,15 @@ namespace CursovoyProjectxDxD.Commands
         private static void AppendAdminCommands(StringBuilder builder)
         {
             builder.AppendLine("Администрирование:");
-            builder.AppendLine("  admin user create <логин> <пароль> [роль: user|admin|statistician]");
-            builder.AppendLine("  admin user list");
-            builder.AppendLine("  admin user info <логин>");
-            builder.AppendLine("  admin user block <логин>");
-            builder.AppendLine("  admin user unblock <логин>");
-            builder.AppendLine("  admin user delete <логин>");
-            builder.AppendLine("  admin user nt <логин>");
-            builder.AppendLine("  admin nt view <id>");
-            builder.AppendLine("  admin nt edit <id> \"новый текст\"");
+            builder.AppendLine("  admin user create <логин> <пароль> [роль] - создать пользователя с ролью user/admin/statistician");
+            builder.AppendLine("  admin user list                     - список пользователей");
+            builder.AppendLine("  admin user info <логин>             - информация о пользователе");
+            builder.AppendLine("  admin user block <логин>            - заблокировать пользователя");
+            builder.AppendLine("  admin user unblock <логин>          - разблокировать пользователя");
+            builder.AppendLine("  admin user delete <логин>           - удалить пользователя");
+            builder.AppendLine("  admin user nt <логин>               - показать заметки пользователя");
+            builder.AppendLine("  admin nt view <id>                  - открыть любую заметку по id");
+            builder.AppendLine("  admin nt edit <id> \"новый текст\"    - изменить любую заметку");
         }
 
         #endregion

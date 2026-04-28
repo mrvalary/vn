@@ -45,7 +45,7 @@ namespace CursovoyProjectxDxD
         private static async Task<int> MainAsync(string[] args)
         {
             // Задаём читаемое название окна консоли.
-            Console.Title = "vn-app";
+            Console.Title = "vn-app Попович В.В.";
             // Включаем UTF-8, чтобы русские строки отображались корректно.
             Console.OutputEncoding = Encoding.UTF8;
 

@@ -13,6 +13,7 @@ namespace VnInstaller
     /// </summary>
     internal class Program
     {
+
         // Имя корневой папки установки.
         private const string InstallFolderName = "vn";
         // Имя папки приложения внутри каталога установки.
