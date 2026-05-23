@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestInputData>
+  <TestCase id="TC-AUTH-01" group="Авторизация">
+    <InputSet name="admin-valid" expected="success">
+      <Input name="login">admin</Input>
+      <Input name="password">admin123</Input>
+      <Input name="expectedRole">admin</Input>
+    </InputSet>
+    <InputSet name="statistician-valid" expected="success">
+      <Input name="login">statistician</Input>
+      <Input name="password">stat123</Input>
+      <Input name="expectedRole">statistician</Input>
+    </InputSet>
+    <InputSet name="user-valid" expected="success">
+      <Input name="login">user</Input>
+      <Input name="password">user123</Input>
+      <Input name="expectedRole">user</Input>
+    </InputSet>
+    <InputSet name="admin-wrong-password" expected="failure">
+      <Input name="login">admin</Input>
+      <Input name="password">wrong-password</Input>
+    </InputSet>
+    <InputSet name="empty-login" expected="failure">
+      <Input name="login"></Input>
+      <Input name="password">123456</Input>
+    </InputSet>
+    <InputSet name="empty-password" expected="failure">
+      <Input name="login">admin</Input>
+      <Input name="password"></Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-AUTH-02" group="Авторизация">
+    <InputSet name="new-user" expected="success">
+      <Input name="login">new_user</Input>
+      <Input name="password">123456</Input>
+      <Input name="role">user</Input>
+    </InputSet>
+    <InputSet name="new-statistician" expected="success">
+      <Input name="login">new_stat</Input>
+      <Input name="password">123456</Input>
+      <Input name="role">statistician</Input>
+    </InputSet>
+    <InputSet name="empty-login" expected="failure">
+      <Input name="login"></Input>
+      <Input name="password">123456</Input>
+      <Input name="role">user</Input>
+    </InputSet>
+    <InputSet name="short-password" expected="failure">
+      <Input name="login">new_user</Input>
+      <Input name="password">123</Input>
+      <Input name="role">user</Input>
+    </InputSet>
+    <InputSet name="unknown-role" expected="failure">
+      <Input name="login">new_user</Input>
+      <Input name="password">123456</Input>
+      <Input name="role">superadmin</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-AUTH-03" group="Авторизация">
+    <InputSet name="role-admin" expected="admin-permissions">
+      <Input name="role">admin</Input>
+    </InputSet>
+    <InputSet name="role-statistician" expected="monitoring-permissions">
+      <Input name="role">statistician</Input>
+    </InputSet>
+    <InputSet name="role-user" expected="basic-permissions">
+      <Input name="role">user</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-AUTH-04" group="Авторизация">
+    <InputSet name="user-security-logs" expected="denied">
+      <Input name="role">user</Input>
+      <Input name="command">sec logs</Input>
+    </InputSet>
+    <InputSet name="statistician-admin-users" expected="denied">
+      <Input name="role">statistician</Input>
+      <Input name="command">admin user list</Input>
+    </InputSet>
+    <InputSet name="admin-security-logs" expected="allowed">
+      <Input name="role">admin</Input>
+      <Input name="command">sec logs</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-AUTH-05" group="Авторизация">
+    <InputSet name="logout-then-note-list" expected="requires-login">
+      <Input name="before">login</Input>
+      <Input name="action">auth logout</Input>
+      <Input name="afterCommand">nt list</Input>
+    </InputSet>
+    <InputSet name="logout-then-security-logs" expected="requires-login">
+      <Input name="before">login</Input>
+      <Input name="action">auth logout</Input>
+      <Input name="afterCommand">sec logs</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-AUTH-06" group="Авторизация">
+    <InputSet name="empty-login" expected="failure">
+      <Input name="login"></Input>
+      <Input name="password">123456</Input>
+    </InputSet>
+    <InputSet name="spaces-login" expected="failure">
+      <Input name="login">   </Input>
+      <Input name="password">123456</Input>
+    </InputSet>
+    <InputSet name="empty-password" expected="failure">
+      <Input name="login">admin</Input>
+      <Input name="password"></Input>
+    </InputSet>
+    <InputSet name="sql-like-login" expected="controlled-failure">
+      <Input name="login">admin' OR '1'='1</Input>
+      <Input name="password">123456</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-01" group="База данных">
+    <InputSet name="user-role-string" expected="aligned">
+      <Input name="roleConnectionString">Username=vn_user_role;Password=vn_user_password</Input>
+    </InputSet>
+    <InputSet name="admin-role-string" expected="aligned">
+      <Input name="roleConnectionString">Username=vn_admin_role;Password=vn_admin_password</Input>
+    </InputSet>
+    <InputSet name="empty-role-string" expected="failure">
+      <Input name="roleConnectionString"></Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-02" group="База данных">
+    <InputSet name="wrong-host-in-role-string" expected="host-from-appconfig">
+      <Input name="roleConnectionString">Host=10.10.10.10;Port=7777;Database=wrong_db;Username=vn_user_role;Password=secret</Input>
+      <Input name="expectedHost">127.0.0.1</Input>
+      <Input name="expectedPort">15432</Input>
+      <Input name="expectedDatabase">vn_test</Input>
+    </InputSet>
+    <InputSet name="wrong-admin-host-in-role-string" expected="host-from-appconfig">
+      <Input name="roleConnectionString">Host=bad-host;Port=1111;Database=bad_db;Username=vn_admin_role;Password=secret</Input>
+      <Input name="expectedHost">127.0.0.1</Input>
+      <Input name="expectedPort">15432</Input>
+      <Input name="expectedDatabase">vn_test</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-03" group="База данных">
+    <InputSet name="postgres-forbidden" expected="not-used">
+      <Input name="username">postgres</Input>
+    </InputSet>
+    <InputSet name="allowed-user-role" expected="allowed">
+      <Input name="username">vn_user_role</Input>
+    </InputSet>
+    <InputSet name="allowed-admin-role" expected="allowed">
+      <Input name="username">vn_admin_role</Input>
+    </InputSet>
+    <InputSet name="allowed-statistician-role" expected="allowed">
+      <Input name="username">vn_statistician_role</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-04" group="База данных">
+    <InputSet name="postgres-stopped" expected="readable-error">
+      <Input name="errorType">SocketException</Input>
+      <Input name="socketError">ConnectionRefused</Input>
+    </InputSet>
+    <InputSet name="connection-timeout" expected="readable-error">
+      <Input name="errorType">TimeoutException</Input>
+    </InputSet>
+    <InputSet name="npgsql-error" expected="readable-error">
+      <Input name="errorType">NpgsqlException</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-05" group="База данных">
+    <InputSet name="user-own-notes" expected="allowed">
+      <Input name="role">user</Input>
+      <Input name="operation">own-notes</Input>
+    </InputSet>
+    <InputSet name="statistician-monitoring" expected="allowed">
+      <Input name="role">statistician</Input>
+      <Input name="operation">monitoring</Input>
+    </InputSet>
+    <InputSet name="user-admin-operation" expected="denied">
+      <Input name="role">user</Input>
+      <Input name="operation">admin-user-management</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-DB-06" group="База данных">
+    <InputSet name="null-exception" expected="readable-message">
+      <Input name="exception">null</Input>
+    </InputSet>
+    <InputSet name="technical-exception" expected="safe-message">
+      <Input name="exception">NpgsqlException</Input>
+      <Input name="mustNotContain">Password=</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-01" group="Заметки">
+    <InputSet name="normal-text" expected="success">
+      <Input name="text">Проверочная заметка</Input>
+    </InputSet>
+    <InputSet name="english-text" expected="success">
+      <Input name="text">VPN gateway maintenance note</Input>
+    </InputSet>
+    <InputSet name="empty-text" expected="failure">
+      <Input name="text"></Input>
+    </InputSet>
+    <InputSet name="spaces-text" expected="failure">
+      <Input name="text">   </Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-02" group="Заметки">
+    <InputSet name="authorized-user" expected="list-own-notes">
+      <Input name="role">user</Input>
+      <Input name="command">nt list</Input>
+    </InputSet>
+    <InputSet name="not-authorized" expected="failure">
+      <Input name="role"></Input>
+      <Input name="command">nt list</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-03" group="Заметки">
+    <InputSet name="default-limit" expected="5">
+      <Input name="command">nt recent</Input>
+    </InputSet>
+    <InputSet name="limit-1" expected="1">
+      <Input name="command">nt recent 1</Input>
+    </InputSet>
+    <InputSet name="limit-3" expected="3">
+      <Input name="command">nt recent 3</Input>
+    </InputSet>
+    <InputSet name="limit-0" expected="failure">
+      <Input name="command">nt recent 0</Input>
+    </InputSet>
+    <InputSet name="limit-text" expected="failure">
+      <Input name="command">nt recent abc</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-04" group="Заметки">
+    <InputSet name="existing-word" expected="found-or-empty-list">
+      <Input name="query">сервер</Input>
+    </InputSet>
+    <InputSet name="different-case" expected="case-insensitive">
+      <Input name="query">VPN</Input>
+    </InputSet>
+    <InputSet name="empty-query" expected="failure">
+      <Input name="query"></Input>
+    </InputSet>
+    <InputSet name="spaces-query" expected="failure">
+      <Input name="query">   </Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-05" group="Заметки">
+    <InputSet name="valid-edit" expected="success">
+      <Input name="noteId">1</Input>
+      <Input name="text">Новый текст заметки</Input>
+    </InputSet>
+    <InputSet name="zero-id" expected="failure">
+      <Input name="noteId">0</Input>
+      <Input name="text">Новый текст заметки</Input>
+    </InputSet>
+    <InputSet name="empty-new-text" expected="failure">
+      <Input name="noteId">1</Input>
+      <Input name="text"></Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-06" group="Заметки">
+    <InputSet name="valid-delete" expected="success-or-not-found">
+      <Input name="noteId">1</Input>
+    </InputSet>
+    <InputSet name="zero-id" expected="failure">
+      <Input name="noteId">0</Input>
+    </InputSet>
+    <InputSet name="negative-id" expected="failure">
+      <Input name="noteId">-1</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-07" group="Заметки">
+    <InputSet name="add-without-auth" expected="failure">
+      <Input name="command">nt add "text"</Input>
+    </InputSet>
+    <InputSet name="list-without-auth" expected="failure">
+      <Input name="command">nt list</Input>
+    </InputSet>
+    <InputSet name="delete-without-auth" expected="failure">
+      <Input name="command">nt del 1</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-NOTE-08" group="Заметки">
+    <InputSet name="admin-view" expected="allowed-for-admin">
+      <Input name="role">admin</Input>
+      <Input name="command">admin nt view &lt;id&gt;</Input>
+    </InputSet>
+    <InputSet name="user-admin-edit" expected="denied">
+      <Input name="role">user</Input>
+      <Input name="command">admin nt edit &lt;id&gt; "text"</Input>
+    </InputSet>
+    <InputSet name="statistician-admin-notes" expected="denied">
+      <Input name="role">statistician</Input>
+      <Input name="command">admin user nt &lt;login&gt;</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-01" group="Обновления">
+    <InputSet name="newer-release" expected="available">
+      <Input name="currentVersion">1.3.0</Input>
+      <Input name="tag">v99.0.0</Input>
+      <Input name="asset">vn-release.zip</Input>
+    </InputSet>
+    <InputSet name="tag-without-v" expected="available">
+      <Input name="currentVersion">1.3.0</Input>
+      <Input name="tag">99.0.0</Input>
+      <Input name="asset">vn-release.zip</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-02" group="Обновления">
+    <InputSet name="full-github-json" expected="parsed">
+      <Input name="tag_name">v99.0.0</Input>
+      <Input name="name">Release 99</Input>
+      <Input name="body">notes</Input>
+      <Input name="asset">vn-release.zip</Input>
+    </InputSet>
+    <InputSet name="release-with-other-name" expected="parsed">
+      <Input name="tag_name">v100.0.0</Input>
+      <Input name="name">Release 100</Input>
+      <Input name="body">update notes</Input>
+      <Input name="asset">vn-win-x64.zip</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-03" group="Обновления">
+    <InputSet name="zip-asset" expected="selected">
+      <Input name="asset">vn-win-x64.zip</Input>
+    </InputSet>
+    <InputSet name="txt-asset" expected="not-selected">
+      <Input name="asset">readme.txt</Input>
+    </InputSet>
+    <InputSet name="exe-asset" expected="not-selected">
+      <Input name="asset">installer.exe</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-04" group="Обновления">
+    <InputSet name="http-500" expected="failure">
+      <Input name="statusCode">500</Input>
+    </InputSet>
+    <InputSet name="http-404" expected="failure">
+      <Input name="statusCode">404</Input>
+    </InputSet>
+    <InputSet name="invalid-json" expected="failure">
+      <Input name="json">{bad json}</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-05" group="Обновления">
+    <InputSet name="installer-present" expected="start">
+      <Input name="installerPath">vn-installer.exe</Input>
+    </InputSet>
+    <InputSet name="installer-missing" expected="readable-error">
+      <Input name="installerPath"></Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-06" group="Обновления">
+    <InputSet name="installer-arguments" expected="prepared">
+      <Input name="appPath">C:\VN\vn-app.exe</Input>
+      <Input name="processId">1234</Input>
+      <Input name="downloadUrl">https://example.com/vn-release.zip</Input>
+      <Input name="latestVersion">99.0.0</Input>
+    </InputSet>
+    <InputSet name="installer-arguments-path-with-spaces" expected="prepared">
+      <Input name="appPath">C:\Program Files\VN\vn-app.exe</Input>
+      <Input name="processId">5678</Input>
+      <Input name="downloadUrl">https://example.com/vn-win-x64.zip</Input>
+      <Input name="latestVersion">100.0.0</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-07" group="Обновления">
+    <InputSet name="empty-download-url" expected="failure">
+      <Input name="downloadUrl"></Input>
+    </InputSet>
+    <InputSet name="broken-zip" expected="failure">
+      <Input name="archive">broken.zip</Input>
+    </InputSet>
+  </TestCase>
+
+  <TestCase id="TC-UPD-08" group="Обновления">
+    <InputSet name="valid-yaml-settings" expected="used">
+      <Input name="owner">mrvalary</Input>
+      <Input name="repo">vn</Input>
+      <Input name="assetExtension">.zip</Input>
+    </InputSet>
+    <InputSet name="test-yaml-settings" expected="used">
+      <Input name="owner">owner-test</Input>
+      <Input name="repo">repo-test</Input>
+      <Input name="assetExtension">.zip</Input>
+    </InputSet>
+  </TestCase>
+</TestInputData>
