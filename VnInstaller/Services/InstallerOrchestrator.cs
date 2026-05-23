@@ -4,7 +4,9 @@ using VnInstaller.Models;
 
 namespace VnInstaller.Services
 {
-    // Координатор полного сценария установки.
+    /// <summary>
+    /// Координатор полного сценария установки.
+    /// </summary>
     public sealed class InstallerOrchestrator
     {
         // Сервис обращения к GitHub Releases.
@@ -22,7 +24,16 @@ namespace VnInstaller.Services
         // Логгер установщика.
         private readonly FileLogger _logger;
 
-        // Все зависимости получаем через конструктор.
+        /// <summary>
+        /// Создает координатор установки со всеми зависимостями.
+        /// </summary>
+        /// <param name="gitHubReleaseService">Сервис обращения к GitHub Releases.</param>
+        /// <param name="releaseDownloadService">Сервис скачивания архива релиза.</param>
+        /// <param name="archiveExtractorService">Сервис распаковки архива.</param>
+        /// <param name="processWaitService">Сервис ожидания завершения обновляемого процесса.</param>
+        /// <param name="fileDeploymentService">Сервис копирования файлов в папку установки.</param>
+        /// <param name="appStarterService">Сервис запуска приложения после установки.</param>
+        /// <param name="logger">Логгер установщика.</param>
         public InstallerOrchestrator(
             GitHubReleaseService gitHubReleaseService,
             ReleaseDownloadService releaseDownloadService,
@@ -41,7 +52,14 @@ namespace VnInstaller.Services
             _logger = logger;
         }
 
-        // Выполняет полный сценарий установки и обновления в одном режиме.
+        /// <summary>
+        /// Выполняет полный сценарий установки и обновления в одном режиме.
+        /// </summary>
+        /// <param name="targetDirectory">Целевая папка установки приложения.</param>
+        /// <param name="appExePath">Путь к exe приложения после установки.</param>
+        /// <param name="appProcessId">PID обновляемого процесса приложения.</param>
+        /// <param name="cancellationToken">Токен отмены асинхронных операций.</param>
+        /// <returns>Информация об установленном релизе.</returns>
         public async Task<AppUpdateInfo> ExecuteAsync(string targetDirectory, string appExePath, int? appProcessId, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Сначала получаем сведения о последнем релизе.

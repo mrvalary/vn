@@ -7,7 +7,9 @@ using Npgsql;
 
 namespace CursovoyProjectxDxD.Services
 {
-    // Сервис просмотра и редактирования устройств, которые присылают метрики через VnWatcher.
+    /// <summary>
+    /// Сервис просмотра и редактирования устройств, которые присылают метрики через VnWatcher.
+    /// </summary>
     public sealed class MonitoringService
     {
         #region SQL
@@ -55,7 +57,9 @@ namespace CursovoyProjectxDxD.Services
 
         #region Devices
 
-        // Админ или статист могут вручную поправить карточку устройства, которое агент создает автоматически.
+        /// <summary>
+        /// Админ или статист могут вручную поправить карточку устройства, которое агент создает автоматически.
+        /// </summary>
         public async Task SaveDeviceAsync(string deviceKey, string name, string address, string description, CancellationToken cancellationToken)
         {
             EnsureCanManageMonitoring();
@@ -78,7 +82,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Удаление устройства удаляет и его историю метрик через ON DELETE CASCADE.
+        /// <summary>
+        /// Удаление устройства удаляет и его историю метрик через ON DELETE CASCADE.
+        /// </summary>
         public async Task<bool> DeleteDeviceAsync(string deviceKey, CancellationToken cancellationToken)
         {
             EnsureCanManageMonitoring();
@@ -95,7 +101,9 @@ namespace CursovoyProjectxDxD.Services
             }
         }
 
-        // Возвращает устройства, которые уже присылали метрики или были добавлены вручную.
+        /// <summary>
+        /// Возвращает устройства, которые уже присылали метрики или были добавлены вручную.
+        /// </summary>
         public async Task<IReadOnlyList<MonitoredDevice>> ListDevicesAsync(CancellationToken cancellationToken)
         {
             EnsureCanManageMonitoring();
@@ -123,7 +131,9 @@ namespace CursovoyProjectxDxD.Services
 
         #region Metrics
 
-        // Показывает последние снимки нагрузки по выбранному устройству.
+        /// <summary>
+        /// Показывает последние снимки нагрузки по выбранному устройству.
+        /// </summary>
         public async Task<IReadOnlyList<SystemMetricRecord>> ListMetricsAsync(string deviceKey, int limit, CancellationToken cancellationToken)
         {
             EnsureCanManageMonitoring();

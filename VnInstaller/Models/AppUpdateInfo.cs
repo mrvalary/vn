@@ -1,13 +1,23 @@
 namespace VnInstaller.Models
 {
-    // Модель релиза, достаточная для скачивания и установки.
+    /// <summary>
+    /// Модель релиза, достаточная для скачивания и установки.
+    /// </summary>
     public sealed class AppUpdateInfo
     {
-        // Последняя версия релиза.
+        /// <summary>
+        /// Последняя версия релиза.
+        /// </summary>
         public string LatestVersion { get; set; }
-        // Имя zip-архива релиза.
+
+        /// <summary>
+        /// Имя zip-архива релиза.
+        /// </summary>
         public string AssetName { get; set; }
-        // Прямая ссылка на скачивание архива.
+
+        /// <summary>
+        /// Прямая ссылка на скачивание архива.
+        /// </summary>
         public string DownloadUrl { get; set; }
     }
 }

@@ -2,22 +2,34 @@ using System;
 
 namespace CursovoyProjectxDxD.Models
 {
-    // Модель учётной записи пользователя для админских команд.
+    /// <summary>
+    /// Модель учётной записи пользователя для админских команд.
+    /// </summary>
     public sealed class UserAccount
     {
-        // Id пользователя в таблице users.
+        /// <summary>
+        /// Id пользователя в таблице users.
+        /// </summary>
         public int Id { get; set; }
 
-        // Логин пользователя.
+        /// <summary>
+        /// Логин пользователя.
+        /// </summary>
         public string Login { get; set; }
 
-        // Системное название роли: user или admin.
+        /// <summary>
+        /// Системное название роли: user или admin.
+        /// </summary>
         public string RoleName { get; set; }
 
-        // Показывает, заблокирована ли учётная запись.
+        /// <summary>
+        /// Показывает, заблокирована ли учётная запись.
+        /// </summary>
         public bool IsBlocked { get; set; }
 
-        // Дата создания пользователя, если колонка уже есть в базе.
+        /// <summary>
+        /// Дата создания пользователя, если колонка уже есть в базе.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
     }
 }

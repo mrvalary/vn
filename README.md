@@ -41,10 +41,9 @@ updates:
 
 ```yaml
 watcher:
-  deviceKey: ""
-  deviceName: ""
   intervalSeconds: 60
   databaseTimeoutSeconds: 10
+  hddPath: ""
 ```
 
 Если YAML-файл отсутствует, приложение использует значения по умолчанию.
@@ -76,6 +75,7 @@ watcher:
 | --- | --- |
 | `nt add "текст"` | Добавить заметку |
 | `nt list` | Показать свои заметки |
+| `nt recent [количество]` | Показать последние заметки, по умолчанию 5 |
 | `nt edit <id> "новый текст"` | Изменить свою заметку |
 | `nt del <id>` | Удалить свою заметку |
 | `nt search "текст"` | Найти свои заметки |
@@ -85,6 +85,7 @@ watcher:
 ```text
 vn> nt add "Проверить конфигурацию VPN-шлюза"
 vn> nt list
+vn> nt recent 3
 vn> nt search "VPN"
 ```
 
@@ -95,16 +96,18 @@ vn> nt search "VPN"
 | Команда | Описание |
 | --- | --- |
 | `watch list` | Показать устройства мониторинга |
-| `watch show <deviceKey> [count]` | Показать последние метрики CPU/RAM/HDD |
-| `watch add <deviceKey> <name> [address] [description]` | Добавить или обновить устройство |
-| `watch del <deviceKey>` | Удалить устройство из мониторинга |
+| `watch status` | Проверить, запущен ли watcher-агент |
+| `watch show <имя ПК> [количество]` | Показать последние метрики CPU/RAM/HDD |
 
 Пример:
 
 ```text
 vn> watch list
+vn> watch status
 vn> watch show MRVALARYPC 10
 ```
+
+`<имя ПК>` - это имя компьютера Windows, которое watcher автоматически отправляет в базу, например `MRVALARYPC`.
 
 ## Watcher-агент
 
@@ -114,7 +117,7 @@ vn> watch show MRVALARYPC 10
 
 - собирает CPU, RAM и HDD;
 - отправляет данные раз в 60 секунд, если в `watcher.yml` не указан другой интервал;
-- сам создает устройство в таблице мониторинга, если такого `deviceKey` еще нет;
+- сам создает устройство в таблице мониторинга, если такого имени ПК еще нет;
 - подключается к базе через отдельную учетную запись `vn_watcher`.
 
 Примеры запуска:

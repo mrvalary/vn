@@ -6,7 +6,9 @@ using VnInstaller.Models;
 
 namespace VnInstaller.Services
 {
-    // Сервис скачивания zip-архива релиза.
+    /// <summary>
+    /// Сервис скачивания zip-архива релиза.
+    /// </summary>
     public sealed class ReleaseDownloadService
     {
         // HTTP-клиент для скачивания файла.
@@ -14,14 +16,23 @@ namespace VnInstaller.Services
         // Логгер этапа скачивания.
         private readonly FileLogger _logger;
 
-        // Получаем зависимости через конструктор.
+        /// <summary>
+        /// Создает сервис скачивания архива релиза.
+        /// </summary>
+        /// <param name="httpClient">HTTP-клиент для скачивания файла.</param>
+        /// <param name="logger">Логгер установщика.</param>
         public ReleaseDownloadService(HttpClient httpClient, FileLogger logger)
         {
             _httpClient = httpClient;
             _logger = logger;
         }
 
-        // Скачивает архив релиза и возвращает путь к файлу.
+        /// <summary>
+        /// Скачивает архив релиза и возвращает путь к файлу.
+        /// </summary>
+        /// <param name="updateInfo">Информация о релизе и ссылке на архив.</param>
+        /// <param name="cancellationToken">Токен отмены скачивания.</param>
+        /// <returns>Путь к скачанному архиву.</returns>
         public async Task<string> DownloadAsync(AppUpdateInfo updateInfo, CancellationToken cancellationToken)
         {
             // Формируем временную папку под конкретную версию.

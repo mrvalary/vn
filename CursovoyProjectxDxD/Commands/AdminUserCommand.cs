@@ -8,16 +8,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Группа админских команд управления пользователями.
+    /// <summary>
+    /// Группа админских команд управления пользователями.
+    /// </summary>
     public sealed class AdminUserCommand : ICommand
     {
-        // Команда ищется по первым двум словам: admin user.
+        /// <summary>
+        /// Команда ищется по первым двум словам: admin user.
+        /// </summary>
         public string Name => "admin user";
 
-        // В справке перечисляем все действия этой группы.
-        public string Description => "Админ: create/delete/block/unblock/info/list/nt";
+        /// <summary>
+        /// В справке перечисляем все действия этой группы.
+        /// </summary>
+        public string Description => "Админ: управление пользователями";
 
-        // Выполняет выбранное действие над учётной записью.
+        /// <summary>
+        /// Выполняет выбранное действие над учётной записью.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем текущую сессию для проверки роли.
@@ -63,13 +71,15 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Fail(GetUsage());
         }
 
-        // Создаёт нового пользователя.
+        /// <summary>
+        /// Создаёт нового пользователя.
+        /// </summary>
         private static async Task<CommandResult> CreateUserAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис: роль можно не указывать, тогда будет user.
             if (context.Args.Length < 5 || context.Args.Length > 6)
             {
-                return CommandResult.Fail("Использование: admin user create <login> <password> [user|admin|statistician]");
+                return CommandResult.Fail("Использование: admin user create <логин> <пароль> [роль: user|admin|statistician]");
             }
 
             // Получаем AuthService.
@@ -88,13 +98,15 @@ namespace CursovoyProjectxDxD.Commands
             return result.IsSuccess ? CommandResult.Ok(result.Message) : CommandResult.Fail(result.Message);
         }
 
-        // Удаляет пользователя.
+        /// <summary>
+        /// Удаляет пользователя.
+        /// </summary>
         private static async Task<CommandResult> DeleteUserAsync(CommandContext context, AuthSessionService sessionService, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
             if (context.Args.Length != 4)
             {
-                return CommandResult.Fail("Использование: admin user delete <login>");
+                return CommandResult.Fail("Использование: admin user delete <логин>");
             }
 
             // Админ не должен удалить сам себя во время текущей сессии.
@@ -113,15 +125,17 @@ namespace CursovoyProjectxDxD.Commands
                 : CommandResult.Fail("Пользователь " + login + " не найден.");
         }
 
-        // Блокирует или разблокирует пользователя.
+        /// <summary>
+        /// Блокирует или разблокирует пользователя.
+        /// </summary>
         private static async Task<CommandResult> SetBlockedAsync(CommandContext context, AuthSessionService sessionService, bool isBlocked, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
             if (context.Args.Length != 4)
             {
                 return CommandResult.Fail(isBlocked
-                    ? "Использование: admin user block <login>"
-                    : "Использование: admin user unblock <login>");
+                    ? "Использование: admin user block <логин>"
+                    : "Использование: admin user unblock <логин>");
             }
 
             // Админ не должен заблокировать сам себя во время текущей сессии.
@@ -145,13 +159,15 @@ namespace CursovoyProjectxDxD.Commands
                 : "Пользователь " + login + " разблокирован.");
         }
 
-        // Показывает информацию о пользователе.
+        /// <summary>
+        /// Показывает информацию о пользователе.
+        /// </summary>
         private static async Task<CommandResult> ShowUserInfoAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
             if (context.Args.Length != 4)
             {
-                return CommandResult.Fail("Использование: admin user info <login>");
+                return CommandResult.Fail("Использование: admin user info <логин>");
             }
 
             // Получаем пользователя.
@@ -167,7 +183,9 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Ok(FormatUser(user));
         }
 
-        // Показывает список всех пользователей.
+        /// <summary>
+        /// Показывает список всех пользователей.
+        /// </summary>
         private static async Task<CommandResult> ListUsersAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // У команды list нет дополнительных аргументов.
@@ -200,13 +218,15 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Ok(builder.ToString().TrimEnd());
         }
 
-        // Показывает заметки указанного пользователя.
+        /// <summary>
+        /// Показывает заметки указанного пользователя.
+        /// </summary>
         private static async Task<CommandResult> ListUserNotesAsync(CommandContext context, CancellationToken cancellationToken)
         {
             // Проверяем синтаксис.
             if (context.Args.Length != 4)
             {
-                return CommandResult.Fail("Использование: admin user nt <login>");
+                return CommandResult.Fail("Использование: admin user nt <логин>");
             }
 
             // Получаем заметки пользователя.
@@ -222,19 +242,23 @@ namespace CursovoyProjectxDxD.Commands
             return CommandResult.Ok(FormatNotes(notes));
         }
 
-        // Форматирует карточку пользователя.
+        /// <summary>
+        /// Форматирует карточку пользователя.
+        /// </summary>
         private static string FormatUser(UserAccount user)
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("Пользователь #" + user.Id);
             builder.AppendLine("Логин: " + user.Login);
-            builder.AppendLine("Роль: " + UserRole.GetDisplayName(user.RoleName) + " (" + user.RoleName + ")");
+            builder.AppendLine("Роль: " + UserRole.GetDisplayName(user.RoleName));
             builder.AppendLine("Статус: " + (user.IsBlocked ? "заблокирован" : "активен"));
             builder.AppendLine("Создан: " + user.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
             return builder.ToString().TrimEnd();
         }
 
-        // Форматирует список заметок.
+        /// <summary>
+        /// Форматирует список заметок.
+        /// </summary>
         private static string FormatNotes(IReadOnlyList<NoteRecord> notes)
         {
             StringBuilder builder = new StringBuilder();
@@ -251,20 +275,24 @@ namespace CursovoyProjectxDxD.Commands
             return builder.ToString().TrimEnd();
         }
 
-        // Возвращает справку по группе admin user.
+        /// <summary>
+        /// Возвращает справку по группе admin user.
+        /// </summary>
         private static string GetUsage()
         {
             return "Использование:\n" +
-                   "admin user create <login> <password> [user|admin|statistician]\n" +
-                   "admin user delete <login>\n" +
-                   "admin user block <login>\n" +
-                   "admin user unblock <login>\n" +
-                   "admin user info <login>\n" +
+                   "admin user create <логин> <пароль> [роль: user|admin|statistician]\n" +
+                   "admin user delete <логин>\n" +
+                   "admin user block <логин>\n" +
+                   "admin user unblock <логин>\n" +
+                   "admin user info <логин>\n" +
                    "admin user list\n" +
-                   "admin user nt <login>";
+                   "admin user nt <логин>";
         }
 
-        // Записывает действие администратора в журнал безопасности.
+        /// <summary>
+        /// Записывает действие администратора в журнал безопасности.
+        /// </summary>
         private static async Task WriteAdminLogAsync(CommandContext context, string eventType, string message, string target, CancellationToken cancellationToken)
         {
             // Получаем сервис журнала безопасности.

@@ -2,41 +2,59 @@ using System;
 
 namespace CursovoyProjectxDxD.Models
 {
-    // Карточка устройства, которое VnWatcher зарегистрировал в базе данных.
+    /// <summary>
+    /// Карточка устройства, которое VnWatcher зарегистрировал в базе данных.
+    /// </summary>
     public sealed class MonitoredDevice
     {
         #region Identity
 
-        // Внутренний id записи в monitored_devices.
+        /// <summary>
+        /// Внутренний id записи в monitored_devices.
+        /// </summary>
         public int Id { get; set; }
 
-        // Стабильный ключ устройства, который присылает агент.
+        /// <summary>
+        /// Стабильный ключ устройства, который присылает агент.
+        /// </summary>
         public string DeviceKey { get; set; }
 
         #endregion
 
         #region Display
 
-        // Понятное имя устройства для вывода в списке.
+        /// <summary>
+        /// Понятное имя устройства для вывода в списке.
+        /// </summary>
         public string Name { get; set; }
 
-        // Адрес или инвентарная привязка устройства, если ее указал админ или статист.
+        /// <summary>
+        /// Адрес или инвентарная привязка устройства, если ее указал админ или статист.
+        /// </summary>
         public string Address { get; set; }
 
-        // Дополнительное описание устройства.
+        /// <summary>
+        /// Дополнительное описание устройства.
+        /// </summary>
         public string Description { get; set; }
 
         #endregion
 
         #region State
 
-        // Флаг активности устройства в мониторинге.
+        /// <summary>
+        /// Флаг активности устройства в мониторинге.
+        /// </summary>
         public bool IsActive { get; set; }
 
-        // Время последнего пакета метрик от агента.
+        /// <summary>
+        /// Время последнего пакета метрик от агента.
+        /// </summary>
         public DateTime? LastSeenAt { get; set; }
 
-        // Время создания карточки устройства.
+        /// <summary>
+        /// Время создания карточки устройства.
+        /// </summary>
         public DateTime CreatedAt { get; set; }
 
         #endregion

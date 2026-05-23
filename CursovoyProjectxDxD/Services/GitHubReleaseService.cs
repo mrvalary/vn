@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,44 +57,55 @@ namespace CursovoyProjectxDxD.Services
             // owner/repo берутся из vn.yml, чтобы репозиторий можно было сменить без пересборки.
             string url = "https://api.github.com/repos/" + _settings.UpdateOwner + "/" + _settings.UpdateRepo + "/releases/latest";
 
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-            using (response)
+            using (CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                response.EnsureSuccessStatusCode();
+                // Таймаут вынесен в vn.yml, чтобы зависший GitHub-запрос не блокировал запуск приложения слишком долго.
+                timeout.CancelAfter(TimeSpan.FromSeconds(_settings.UpdateHttpTimeoutSeconds));
 
-                string json = await response.Content.ReadAsStringAsync();
-                var release = JsonSerializer.Deserialize<GitHubReleaseDto>(json);
-
-                if (release == null)
+                var response = await _httpClient.GetAsync(url, timeout.Token);
+                using (response)
                 {
-                    throw new InvalidOperationException("GitHub release response is empty.");
-                }
+                    response.EnsureSuccessStatusCode();
 
-                string latestVersion = NormalizeVersion(release.TagName);
-                // Тип архива тоже вынесен в YAML, но по умолчанию остается .zip.
-                var asset = release.Assets.FirstOrDefault(a =>
-                    a.Name.EndsWith(_settings.UpdateAssetExtension, StringComparison.OrdinalIgnoreCase));
+                    string json = await response.Content.ReadAsStringAsync();
+                    var release = JsonSerializer.Deserialize<GitHubReleaseDto>(json);
 
-                if (asset == null)
-                {
+                    if (release == null)
+                    {
+                        throw new InvalidOperationException("GitHub вернул пустой ответ о релизе.");
+                    }
+
+                    string latestVersion = NormalizeVersion(release.TagName);
+                    // Тип архива тоже вынесен в YAML, но по умолчанию остается .zip.
+                    var asset = release.Assets.FirstOrDefault(a =>
+                        a.Name.EndsWith(_settings.UpdateAssetExtension, StringComparison.OrdinalIgnoreCase));
+
+                    if (asset == null)
+                    {
+                        return new AppUpdateInfo
+                        {
+                            CurrentVersion = currentVersion,
+                            LatestVersion = latestVersion,
+                            ReleaseName = release.Name,
+                            ReleaseNotes = release.Body,
+                            IsAvailable = false,
+                            AssetName = string.Empty,
+                            DownloadUrl = string.Empty
+                        };
+                    }
+
                     return new AppUpdateInfo
                     {
                         CurrentVersion = currentVersion,
                         LatestVersion = latestVersion,
-                        IsAvailable = false,
-                        AssetName = string.Empty,
-                        DownloadUrl = string.Empty
+                        ReleaseName = release.Name,
+                        ReleaseNotes = release.Body,
+                        IsAvailable = CanCompareVersions(latestVersion, currentVersion) &&
+                            CompareVersions(latestVersion, currentVersion) > 0,
+                        AssetName = asset.Name,
+                        DownloadUrl = asset.BrowserDownloadUrl
                     };
                 }
-
-                return new AppUpdateInfo
-                {
-                    CurrentVersion = currentVersion,
-                    LatestVersion = latestVersion,
-                    IsAvailable = CompareVersions(latestVersion, currentVersion) > 0,
-                    AssetName = asset.Name,
-                    DownloadUrl = asset.BrowserDownloadUrl
-                };
             }
         }
 
@@ -102,18 +114,21 @@ namespace CursovoyProjectxDxD.Services
         #region Version Helpers
 
         /// <summary>
-        /// Удаляет префикс v из тега релиза.
+        /// Извлекает номер версии из тега релиза.
         /// </summary>
         /// <param name="tag">Тег релиза GitHub.</param>
-        /// <returns>Версия без префикса v.</returns>
+        /// <returns>Версия без текстовых приставок или исходная строка, если номер не найден.</returns>
         private static string NormalizeVersion(string tag)
         {
-            if (!string.IsNullOrWhiteSpace(tag) && tag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(tag))
             {
-                return tag.Substring(1);
+                return string.Empty;
             }
 
-            return tag ?? string.Empty;
+            // GitHub-тег может быть v1.3.0, 1.3.0 или даже "Release version 1.3.0".
+            // Для сравнения берём первую похожую на версию числовую часть.
+            Match match = Regex.Match(tag, @"\d+(\.\d+){1,3}");
+            return match.Success ? match.Value : tag.Trim();
         }
 
         /// <summary>
@@ -124,7 +139,58 @@ namespace CursovoyProjectxDxD.Services
         /// <returns>Положительное число, если left новее right; ноль при равенстве; отрицательное число, если left старее.</returns>
         private static int CompareVersions(string left, string right)
         {
-            return Version.Parse(left).CompareTo(Version.Parse(right));
+            return ToVersion(left).CompareTo(ToVersion(right));
+        }
+
+        /// <summary>
+        /// Проверяет, можно ли безопасно сравнить две строки версий.
+        /// </summary>
+        /// <param name="left">Первая версия.</param>
+        /// <param name="right">Вторая версия.</param>
+        /// <returns>true, если обе строки удалось привести к System.Version.</returns>
+        private static bool CanCompareVersions(string left, string right)
+        {
+            return TryToVersion(left, out Version _) && TryToVersion(right, out Version _);
+        }
+
+        /// <summary>
+        /// Преобразует строку версии в System.Version.
+        /// </summary>
+        /// <param name="value">Строковое значение версии.</param>
+        /// <returns>Объект Version.</returns>
+        private static Version ToVersion(string value)
+        {
+            Version version;
+            if (!TryToVersion(value, out version))
+            {
+                return new Version(0, 0, 0);
+            }
+
+            return version;
+        }
+
+        /// <summary>
+        /// Мягко разбирает версию и дополняет отсутствующие части нулями.
+        /// </summary>
+        /// <param name="value">Строка версии.</param>
+        /// <param name="version">Разобранная версия.</param>
+        /// <returns>true, если версия успешно разобрана.</returns>
+        private static bool TryToVersion(string value, out Version version)
+        {
+            version = null;
+            string normalized = NormalizeVersion(value);
+            Match match = Regex.Match(normalized, @"^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?$");
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            int major = int.Parse(match.Groups[1].Value);
+            int minor = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0;
+            int build = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+            int revision = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 0;
+            version = new Version(major, minor, build, revision);
+            return true;
         }
 
         #endregion

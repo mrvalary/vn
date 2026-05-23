@@ -2,14 +2,20 @@ using System.Text.Json.Serialization;
 
 namespace VnInstaller.Models
 {
-    // DTO одного asset-файла из GitHub Releases API.
+    /// <summary>
+    /// DTO одного asset-файла из GitHub Releases API.
+    /// </summary>
     public sealed class GitHubAssetDto
     {
-        // Имя файла.
+        /// <summary>
+        /// Имя файла.
+        /// </summary>
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        // URL прямого скачивания файла.
+        /// <summary>
+        /// URL прямого скачивания файла.
+        /// </summary>
         [JsonPropertyName("browser_download_url")]
         public string BrowserDownloadUrl { get; set; }
     }

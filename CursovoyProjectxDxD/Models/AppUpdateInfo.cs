@@ -1,17 +1,40 @@
 namespace CursovoyProjectxDxD.Models
 {
-    // Модель результата проверки обновления.
+    /// <summary>
+    /// Модель результата проверки обновления.
+    /// </summary>
     public sealed class AppUpdateInfo
     {
-        // Текущая локальная версия.
+        /// <summary>
+        /// Текущая локальная версия.
+        /// </summary>
         public string CurrentVersion { get; set; } = string.Empty;
-        // Последняя версия из GitHub.
+        /// <summary>
+        /// Последняя версия из GitHub.
+        /// </summary>
         public string LatestVersion { get; set; } = string.Empty;
-        // Флаг доступности новой версии.
+
+        /// <summary>
+        /// Название релиза из GitHub Releases.
+        /// </summary>
+        public string ReleaseName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Описание релиза из GitHub Releases.
+        /// </summary>
+        public string ReleaseNotes { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Флаг доступности новой версии.
+        /// </summary>
         public bool IsAvailable { get; set; }
-        // Имя zip-архива релиза.
+        /// <summary>
+        /// Имя zip-архива релиза.
+        /// </summary>
         public string AssetName { get; set; } = string.Empty;
-        // Прямая ссылка на скачивание архива.
+        /// <summary>
+        /// Прямая ссылка на скачивание архива.
+        /// </summary>
         public string DownloadUrl { get; set; } = string.Empty;
     }
 }

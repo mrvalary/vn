@@ -3,19 +3,27 @@ using System.Threading;
 
 namespace VnInstaller.Services
 {
-    // Сервис ожидания завершения основного процесса приложения.
+    /// <summary>
+    /// Сервис ожидания завершения основного процесса приложения.
+    /// </summary>
     public sealed class ProcessWaitService
     {
         // Логгер нужен для записи этапов ожидания.
         private readonly FileLogger _logger;
 
-        // Получаем логгер через конструктор.
+        /// <summary>
+        /// Создает сервис ожидания процесса.
+        /// </summary>
+        /// <param name="logger">Логгер установщика.</param>
         public ProcessWaitService(FileLogger logger)
         {
             _logger = logger;
         }
 
-        // Ждёт завершения процесса по PID.
+        /// <summary>
+        /// Ждёт завершения процесса по PID.
+        /// </summary>
+        /// <param name="processId">PID процесса приложения.</param>
         public void WaitForExit(int? processId)
         {
             // Если PID не передан, установщик запущен вручную и ждать нечего.

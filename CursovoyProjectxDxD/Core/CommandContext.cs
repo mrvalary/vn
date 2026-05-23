@@ -2,15 +2,23 @@ using System;
 
 namespace CursovoyProjectxDxD.Core
 {
-    // Контекст выполнения отдельной команды.
+    /// <summary>
+    /// Контекст выполнения отдельной команды.
+    /// </summary>
     public sealed class CommandContext
     {
-        // Аргументы, полученные после разбора строки ввода.
+        /// <summary>
+        /// Аргументы, полученные после разбора строки ввода.
+        /// </summary>
         public string[] Args { get; }
-        // Провайдер сервисов приложения.
+        /// <summary>
+        /// Провайдер сервисов приложения.
+        /// </summary>
         public IServiceProvider Services { get; }
 
-        // Создаём контекст перед выполнением команды.
+        /// <summary>
+        /// Создаём контекст перед выполнением команды.
+        /// </summary>
         public CommandContext(string[] args, IServiceProvider services)
         {
             // Сохраняем аргументы.
@@ -26,7 +34,7 @@ namespace CursovoyProjectxDxD.Core
             object service = Services.GetService(typeof(T));
             // Если сервис не найден, сразу бросаем ошибку.
             if (service == null)
-                throw new InvalidOperationException("Service " + typeof(T).Name + " is not registered.");
+                throw new InvalidOperationException("Сервис " + typeof(T).Name + " не зарегистрирован.");
 
             // Возвращаем сервис в нужном типе.
             return (T)service;

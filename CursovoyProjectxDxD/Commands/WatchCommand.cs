@@ -50,18 +50,21 @@ namespace CursovoyProjectxDxD.Commands
             }
 
             MonitoringService monitoringService = context.GetRequiredService<MonitoringService>();
-            SecurityLogService securityLogService = context.GetRequiredService<SecurityLogService>();
 
-            if (context.Args[1].Equals("add", StringComparison.OrdinalIgnoreCase) ||
-                context.Args[1].Equals("list", StringComparison.OrdinalIgnoreCase) ||
-                context.Args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
+            if (context.Args[1].Equals("list", StringComparison.OrdinalIgnoreCase))
             {
-                return await ExecuteDeviceCommandAsync(context.Args, monitoringService, securityLogService, cancellationToken);
+                return await ExecuteListCommandAsync(context.Args, monitoringService, cancellationToken);
             }
 
             if (context.Args[1].Equals("show", StringComparison.OrdinalIgnoreCase))
             {
                 return await ExecuteShowCommandAsync(context.Args, monitoringService, cancellationToken);
+            }
+
+            if (context.Args[1].Equals("status", StringComparison.OrdinalIgnoreCase))
+            {
+                WatcherLauncherService watcherLauncher = context.GetRequiredService<WatcherLauncherService>();
+                return ExecuteStatusCommand(context.Args, watcherLauncher);
             }
 
             return CommandResult.Fail(GetUsage());
@@ -72,74 +75,56 @@ namespace CursovoyProjectxDxD.Commands
         #region Device Commands
 
         /// <summary>
-        /// Выполняет команды добавления, просмотра списка и удаления устройств мониторинга.
+        /// Выполняет команду просмотра списка устройств мониторинга.
         /// </summary>
         /// <param name="args">Аргументы команды watch.</param>
         /// <param name="monitoringService">Сервис работы с устройствами мониторинга.</param>
-        /// <param name="securityLogService">Сервис записи событий безопасности.</param>
         /// <param name="cancellationToken">Токен отмены операции.</param>
-        /// <returns>Результат выполнения команды устройства.</returns>
-        private static async Task<CommandResult> ExecuteDeviceCommandAsync(
+        /// <returns>Результат выполнения команды списка устройств.</returns>
+        private static async Task<CommandResult> ExecuteListCommandAsync(
             string[] args,
             MonitoringService monitoringService,
-            SecurityLogService securityLogService,
             CancellationToken cancellationToken)
         {
-            if (args[1].Equals("add", StringComparison.OrdinalIgnoreCase))
+            if (args.Length != 2)
             {
-                if (args.Length < 4)
-                {
-                    return CommandResult.Fail("Использование: watch add <deviceKey> <name> [address] [description]");
-                }
-
-                string deviceKey = args[2];
-                string name = args[3];
-                string address = args.Length >= 5 ? args[4] : null;
-                string description = args.Length >= 6 ? string.Join(" ", args, 5, args.Length - 5) : null;
-
-                await monitoringService.SaveDeviceAsync(deviceKey, name, address, description, cancellationToken);
-                await securityLogService.WriteCurrentUserEventAsync("watch_device_save", "Устройство мониторинга сохранено.", deviceKey, cancellationToken);
-
-                return CommandResult.Ok("Устройство сохранено: " + deviceKey);
+                return CommandResult.Fail("Использование: watch list");
             }
 
-            if (args[1].Equals("list", StringComparison.OrdinalIgnoreCase))
+            IReadOnlyList<MonitoredDevice> devices = await monitoringService.ListDevicesAsync(cancellationToken);
+            if (devices.Count == 0)
             {
-                if (args.Length != 2)
-                {
-                    return CommandResult.Fail("Использование: watch list");
-                }
-
-                IReadOnlyList<MonitoredDevice> devices = await monitoringService.ListDevicesAsync(cancellationToken);
-                if (devices.Count == 0)
-                {
-                    return CommandResult.Ok("Устройства мониторинга пока не добавлены.");
-                }
-
-                return CommandResult.Ok(FormatDevices(devices));
+                return CommandResult.Ok("Устройства мониторинга пока не добавлены.");
             }
 
-            if (args[1].Equals("del", StringComparison.OrdinalIgnoreCase))
+            return CommandResult.Ok(FormatDevices(devices));
+        }
+
+        #endregion
+
+        #region Agent Commands
+
+        /// <summary>
+        /// Показывает, запущен ли watcher-агент рядом с основным приложением.
+        /// </summary>
+        /// <param name="args">Аргументы команды watch.</param>
+        /// <param name="watcherLauncher">Сервис проверки состояния watcher-агента.</param>
+        /// <returns>Текстовый статус watcher-агента.</returns>
+        private static CommandResult ExecuteStatusCommand(string[] args, WatcherLauncherService watcherLauncher)
+        {
+            if (args.Length != 2)
             {
-                if (args.Length != 3)
-                {
-                    return CommandResult.Fail("Использование: watch del <deviceKey>");
-                }
-
-                string deviceKey = args[2];
-                bool deleted = await monitoringService.DeleteDeviceAsync(deviceKey, cancellationToken);
-                await securityLogService.WriteCurrentUserEventAsync(
-                    deleted ? "watch_device_delete" : "watch_device_delete_failed",
-                    deleted ? "Устройство мониторинга удалено." : "Устройство мониторинга не найдено.",
-                    deviceKey,
-                    cancellationToken);
-
-                return deleted
-                    ? CommandResult.Ok("Устройство удалено: " + deviceKey)
-                    : CommandResult.Fail("Устройство не найдено: " + deviceKey);
+                return CommandResult.Fail("Использование: watch status");
             }
 
-            return CommandResult.Fail(GetUsage());
+            WatcherStatus status = watcherLauncher.GetStatus();
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Watcher-агент:");
+            builder.AppendLine("Статус: " + (status.IsRunning ? "запущен" : "не запущен"));
+            builder.AppendLine("Файл: " + status.ExecutablePath);
+
+            return CommandResult.Ok(builder.ToString().TrimEnd());
         }
 
         #endregion
@@ -160,7 +145,7 @@ namespace CursovoyProjectxDxD.Commands
         {
             if (args.Length < 3)
             {
-                return CommandResult.Fail("Использование: watch show <deviceKey> [count]");
+                return CommandResult.Fail("Использование: watch show <имя ПК> [количество]");
             }
 
             string deviceKey = args[2];
@@ -272,9 +257,8 @@ namespace CursovoyProjectxDxD.Commands
             return
                 "Команды мониторинга:\n" +
                 "watch list\n" +
-                "watch show <deviceKey> [count]\n" +
-                "watch add <deviceKey> <name> [address] [description]\n" +
-                "watch del <deviceKey>";
+                "watch status\n" +
+                "watch show <имя ПК> [количество]\n";
         }
 
         #endregion

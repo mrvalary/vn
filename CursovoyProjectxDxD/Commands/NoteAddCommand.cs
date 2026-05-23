@@ -6,16 +6,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда добавления новой заметки через серверный API.
+    /// <summary>
+    /// Команда добавления новой заметки через серверный API.
+    /// </summary>
     public sealed class NoteAddCommand : ICommand
     {
-        // Имя команды в CLI.
+        /// <summary>
+        /// Имя команды в CLI.
+        /// </summary>
         public string Name => "nt add";
 
-        // Краткое описание для справки.
+        /// <summary>
+        /// Краткое описание для справки.
+        /// </summary>
         public string Description => "Добавление заметки: nt add \"текст заметки\"";
 
-        // Выполняет добавление заметки.
+        /// <summary>
+        /// Выполняет добавление заметки.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Получаем сервис заметок.

@@ -1,6 +1,5 @@
 # Безопасные настройки VnWatcher. Строка подключения остается в App.config.
 watcher:
-  deviceKey: ""
-  deviceName: ""
   intervalSeconds: 60
   databaseTimeoutSeconds: 10
+  hddPath: ""

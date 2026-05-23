@@ -15,6 +15,7 @@ namespace CursovoyProjectxDxD.Services
         private const string DefaultUpdateOwner = "mrvalary";
         private const string DefaultUpdateRepo = "vn";
         private const string DefaultUpdateAssetExtension = ".zip";
+        private const int DefaultUpdateHttpTimeoutSeconds = 15;
 
         #endregion
 
@@ -35,6 +36,11 @@ namespace CursovoyProjectxDxD.Services
         /// </summary>
         public string UpdateAssetExtension { get; private set; }
 
+        /// <summary>
+        /// Таймаут HTTP-запроса к GitHub Releases в секундах.
+        /// </summary>
+        public int UpdateHttpTimeoutSeconds { get; private set; }
+
         #endregion
 
         #region Load
@@ -52,7 +58,8 @@ namespace CursovoyProjectxDxD.Services
             {
                 UpdateOwner = yaml.GetValue("updates", "owner", DefaultUpdateOwner),
                 UpdateRepo = yaml.GetValue("updates", "repo", DefaultUpdateRepo),
-                UpdateAssetExtension = yaml.GetValue("updates", "assetExtension", DefaultUpdateAssetExtension)
+                UpdateAssetExtension = yaml.GetValue("updates", "assetExtension", DefaultUpdateAssetExtension),
+                UpdateHttpTimeoutSeconds = yaml.GetPositiveInt("updates", "httpTimeoutSeconds", DefaultUpdateHttpTimeoutSeconds)
             };
         }
 
@@ -151,6 +158,21 @@ namespace CursovoyProjectxDxD.Services
                 }
 
                 return fallback;
+            }
+
+            /// <summary>
+            /// Возвращает положительное целое значение настройки.
+            /// </summary>
+            /// <param name="section">Название секции YAML.</param>
+            /// <param name="key">Название ключа внутри секции.</param>
+            /// <param name="fallback">Значение по умолчанию.</param>
+            /// <returns>Положительное число из YAML или fallback.</returns>
+            public int GetPositiveInt(string section, string key, int fallback)
+            {
+                int value;
+                return int.TryParse(GetValue(section, key, fallback.ToString()), out value) && value > 0
+                    ? value
+                    : fallback;
             }
 
             #endregion

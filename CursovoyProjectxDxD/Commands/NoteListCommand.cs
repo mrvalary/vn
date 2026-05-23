@@ -8,16 +8,24 @@ using CursovoyProjectxDxD.Services;
 
 namespace CursovoyProjectxDxD.Commands
 {
-    // Команда вывода всех заметок текущего пользователя.
+    /// <summary>
+    /// Команда вывода всех заметок текущего пользователя.
+    /// </summary>
     public sealed class NoteListCommand : ICommand
     {
-        // Имя команды, которое вводится в интерактивной консоли.
+        /// <summary>
+        /// Имя команды, которое вводится в интерактивной консоли.
+        /// </summary>
         public string Name => "nt list";
 
-        // Описание автоматически попадает в команду help.
+        /// <summary>
+        /// Описание автоматически попадает в команду help.
+        /// </summary>
         public string Description => "Список ваших заметок: nt list";
 
-        // Выполняет чтение заметок из PostgreSQL и готовит текстовый список для консоли.
+        /// <summary>
+        /// Выполняет чтение заметок из PostgreSQL и готовит текстовый список для консоли.
+        /// </summary>
         public async Task<CommandResult> ExecuteAsync(CommandContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             // NoteService содержит всю работу с таблицей notes.

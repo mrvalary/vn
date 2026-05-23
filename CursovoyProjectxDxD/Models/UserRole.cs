@@ -1,6 +1,8 @@
 namespace CursovoyProjectxDxD.Models
 {
-    // Единое место, где приложение хранит системные названия ролей.
+    /// <summary>
+    /// Единое место, где приложение хранит системные названия ролей.
+    /// </summary>
     public static class UserRole
     {
         #region Role Names
@@ -18,7 +20,9 @@ namespace CursovoyProjectxDxD.Models
 
         #region Display Names
 
-        // Возвращает русское название роли для вывода в консоль.
+        /// <summary>
+        /// Возвращает русское название роли для вывода в консоль.
+        /// </summary>
         public static string GetDisplayName(string roleName)
         {
             if (roleName == Admin)
